@@ -31,7 +31,7 @@ allowlist_file="/etc/postfix/postscreen_ovh_allowlist.cidr"
 ###########################################################################
 
 # Uncomment to see output
-set -x
+# set -x
 
 printf "Querying outbound IP addresses. This could take a while...\n"
 
