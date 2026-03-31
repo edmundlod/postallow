@@ -36,8 +36,8 @@ printf "Querying outbound IP addresses. This could take a while...\n"
 
 # Query user-defined mailer range
 
-for a in {1..99};
-        do for b in {1..300};
+for a in $(seq 1 99);
+        do for b in $(seq 1 300);
                 do host ${a}.mo${b}.mail-out.ovh.net;
         done;
 done > $temp_file
