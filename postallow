@@ -74,7 +74,7 @@ elif [ -f "/usr/local/etc/postallow/postallow.conf" ]; then
 fi
 
 # Read config file options
-if [ ! -s $config_file ] ; then
+if [ ! -s "$config_file" ] ; then
 	printf "%s: Can't find %s. Exiting.\n" "$0" "$config_file" 1>&2
 	exit 1
 fi
@@ -82,12 +82,28 @@ printf "\nReading options from %s...\n" "$config_file"
 . "${config_file}"
 
 # Read file with hosts that should be allowed
-if [ ! -s $allowlist_hosts ] ; then
+if [ ! -s "$allowlist_hosts" ] ; then
 	printf "%s: Can't find %s. Exiting.\n" "$0" "$allowlist_hosts" 1>&2
 	exit 1
 fi
 printf "\nReading options from %s...\n" "$allowlist_hosts"
 . "${allowlist_hosts}"
+
+# Remove temp files
+cleanup() {
+	test -e "${tmp1}" && rm "${tmp1}"
+	test -e "${tmp2}" && rm "${tmp2}"
+	test -e "${tmp3}" && rm "${tmp3}"
+	test -e "${tmp4}" && rm "${tmp4}"
+	test -e "${tmp5}" && rm "${tmp5}"
+	if [ x"$enable_blocklist" = x"yes" ] ; then
+		test -e "${blktmp1}" && rm "${blktmp1}"
+		test -e "${blktmp2}" && rm "${blktmp2}"
+		test -e "${blktmp3}" && rm "${blktmp3}"
+		test -e "${blktmp4}" && rm "${blktmp4}"
+		test -e "${blktmp5}" && rm "${blktmp5}"
+	fi
+}
 
 # Create temporary files
 printf "\nCreating temporary files...\n"
@@ -334,21 +350,6 @@ if [ x"$enable_blocklist" = x"yes" ] ; then
 	cat "${blocktmp5}" >> "${postfixpath}"/"${blocklist}"
 fi
 
-# Remove temp files
-cleanup() {
-	test -e "${tmp1}" && rm "${tmp1}"
-	test -e "${tmp2}" && rm "${tmp2}"
-	test -e "${tmp3}" && rm "${tmp3}"
-	test -e "${tmp4}" && rm "${tmp4}"
-	test -e "${tmp5}" && rm "${tmp5}"
-	if [ x"$enable_blocklist" = x"yes" ] ; then
-		test -e "${blocktmp1}" && rm "${blocktmp1}"
-		test -e "${blocktmp2}" && rm "${blocktmp2}"
-		test -e "${blocktmp3}" && rm "${blocktmp3}"
-		test -e "${blocktmp4}" && rm "${blocktmp4}"
-		test -e "${blocktmp5}" && rm "${blocktmp5}"
-	fi
-}
 cleanup
 
 # Reload Postfix to pick up changes in allowlist

@@ -12,9 +12,10 @@
 version="1.1"
 lastupdated="16 April 2018"
 
-temp_file="/tmp/ovh_hosts.txt"
+temp_file="$(mktemp /tmp/ovh_hosts.XXXXXX)"
+trap 'rm -f "$temp_file"' EXIT
 allowlist_file="/etc/postfix/postscreen_ovh_allowlist.cidr"
-        
+
 ###########################################################################
         
 # This script uses "mail-out.ovh.net" as a working example of a mailhost
@@ -30,7 +31,7 @@ allowlist_file="/etc/postfix/postscreen_ovh_allowlist.cidr"
 ###########################################################################
 
 # Uncomment to see output
-set -x
+# set -x
 
 printf "Querying outbound IP addresses. This could take a while...\n"
 
@@ -46,7 +47,7 @@ done > $temp_file
 
 printf "Formatting custom allowlist...\n"
 
-grep 'has address' /tmp/ovh_hosts.txt | awk '{print $4 " permit"}' | sort -uV  > $allowlist_file
+grep 'has address' "$temp_file" | awk '{print $4 " permit"}' | sort -uV  > $allowlist_file
 
 # Restart Postfix
 
