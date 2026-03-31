@@ -1,0 +1,17 @@
+[Unit]
+Description=Postallow - Postscreen allowlist/blocklist generator
+Documentation=https://github.com/lquidfire/postallow
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=postallow
+ExecStart=/usr/local/bin/postallow
+# Reload Postfix after the list is updated. The leading '+' runs this specific
+# command as root, regardless of User= above - no sudo or doas required.
+# Adjust the path to postfix(1) to match your system if needed.
+ExecStartPost=+/usr/sbin/postfix reload
+
+[Install]
+WantedBy=multi-user.target

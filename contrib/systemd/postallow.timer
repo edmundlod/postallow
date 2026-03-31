@@ -1,0 +1,13 @@
+[Unit]
+Description=Run Postallow daily to refresh Postscreen allowlist/blocklist
+Documentation=https://github.com/lquidfire/postallow
+
+[Timer]
+# Run once per day. RandomizedDelaySec spreads the load if multiple machines
+# use the same timer configuration.
+OnCalendar=daily
+RandomizedDelaySec=1h
+Persistent=true
+
+[Install]
+WantedBy=timers.target

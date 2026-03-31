@@ -51,13 +51,6 @@ if ! aggregateCIDR=$(which aggregateCIDR.pl) ; then
     exit 1
 fi
 
-if [ x"$reload_postfix" = x"yes" ] ; then
-	if ! postmap=$(which postmap) ; then
-		echo "fatal: unable to locate postmap"
-		exit 1
-	fi
-fi
-
 printf "Starting Postallow v$version ($lastupdated)\n"
 
 # Check for passed config file
@@ -351,12 +344,6 @@ if [ x"$enable_blocklist" = x"yes" ] ; then
 fi
 
 cleanup
-
-# Reload Postfix to pick up changes in allowlist
-if [ x"$reload_postfix" = x"yes" ]; then
-printf '\nReloading Postfix configuration to refresh rules...\n'
-	sudo ${postfixbinarypath}/postfix reload
-fi
 
 printf '\nDone!\n'
 

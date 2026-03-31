@@ -1,0 +1,42 @@
+#!/bin/sh
+#
+# PROVIDE: postallow
+# REQUIRE: NETWORKING
+# KEYWORD: shutdown
+#
+# Install this file as /usr/local/etc/rc.d/postallow
+# Enable in /etc/rc.conf with: postallow_enable="YES"
+#
+# This script runs postallow as the postallow user, then reloads Postfix
+# as root.  The rc.d framework runs as root, so no sudo/doas is needed.
+#
+# Prerequisites:
+#   pw useradd -n postallow -d /nonexistent -s /usr/sbin/nologin -w no
+#   install -d -o postallow -m 755 /var/db/postallow
+#
+# Set postfixpath=/var/db/postallow in postallow.conf.
+
+. /etc/rc.subr
+
+name="postallow"
+rcvar="postallow_enable"
+
+: ${postallow_enable:=NO}
+: ${postallow_user:=postallow}
+: ${postallow_command:=/usr/local/bin/postallow}
+: ${postfix_command:=/usr/local/sbin/postfix}
+
+start_cmd="${name}_run"
+# FreeBSD rc.d does not use stop for oneshot tasks
+stop_cmd=":"
+
+postallow_run()
+{
+	echo "Running postallow as ${postallow_user}..."
+	su -m "${postallow_user}" -c "${postallow_command}"
+	echo "Reloading Postfix..."
+	"${postfix_command}" reload
+}
+
+load_rc_config "${name}"
+run_rc_command "$1"
