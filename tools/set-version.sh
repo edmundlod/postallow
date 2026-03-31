@@ -1,0 +1,46 @@
+#!/bin/sh
+#
+# tools/set-version.sh
+#
+# Stamp the version from the VERSION file into all files that embed it.
+# Run this from the repository root before tagging a release.
+#
+# Usage:
+#   tools/set-version.sh [version]
+#
+# With no argument the version is read from VERSION.
+# With an argument that version is written to VERSION first.
+#
+# Files updated:
+#   VERSION                   (when a version argument is given)
+#   postallow                 (version= and lastupdated=)
+#   man/man1/postallow.1      (.TH date and version)
+#   man/man5/postallow.conf.5 (.TH date and version)
+
+set -e
+
+cd "$(dirname "$0")/.."
+
+if [ -n "$1" ]; then
+    printf '%s\n' "$1" > VERSION
+fi
+
+VERSION="$(cat VERSION)"
+TODAY="$(date +%Y-%m-%d)"
+
+# postallow script
+sed -i \
+    -e "s/^version=.*/version=\"${VERSION}\"/" \
+    -e "s/^lastupdated=.*/lastupdated=\"${TODAY}\"/" \
+    postallow
+
+# man pages: replace the date and version in the .TH line
+# .TH POSTALLOW 1 "date" "Postallow version" "section"
+for page in man/man1/postallow.1 man/man5/postallow.conf.5; do
+    sed -i \
+        -e "s/^\(\.TH [A-Z.]* [0-9] \)\"[^\"]*\" \"Postallow [^\"]*\"/\1\"${TODAY}\" \"Postallow ${VERSION}\"/" \
+        "${page}"
+done
+
+printf 'Version set to %s (date %s)\n' "${VERSION}" "${TODAY}"
+printf 'Files updated: postallow, man/man1/postallow.1, man/man5/postallow.conf.5\n'

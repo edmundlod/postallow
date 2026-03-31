@@ -1,0 +1,195 @@
+.\" SPDX-License-Identifier: MIT
+.\"
+.TH POSTALLOW.CONF 5 "2026-04-01" "Postallow 3.11.0" "File Formats"
+.
+.SH NAME
+postallow.conf \- configuration file for
+.BR postallow (1)
+.
+.SH DESCRIPTION
+.I postallow.conf
+is a POSIX shell snippet that is
+.BR . -sourced
+by
+.BR postallow (1).
+Lines beginning with
+.B #
+are comments; all settings are plain shell variable assignments.
+.PP
+.B postallow
+searches for its configuration file in the following locations, in order.
+A path supplied on the command line takes precedence over all of them.
+.PP
+.PD 0
+.TP 4
+.I /etc/postallow.conf
+.TP
+.I /etc/postallow/postallow.conf
+.TP
+.I /usr/local/etc/postallow.conf
+.TP
+.I /usr/local/etc/postallow/postallow.conf
+.PD
+.
+.SH FILE PATH OPTIONS
+.TP
+.BI allowlist_hosts= path
+Path to the file listing the sender domains whose SPF records should be
+queried.
+This file is itself a shell snippet; see
+.B HOST LIST FILE
+below for the variables it must define.
+.TP
+.BI spftoolspath= path
+Directory containing
+.BR despf.sh (1)
+from the
+.B spf-tools
+package.
+.TP
+.BI postfixpath= path
+Directory to which
+.B postallow
+writes the generated CIDR files.
+This directory must be writable by the
+.I postallow
+system user.
+Point Postfix's
+.B postscreen_access_list
+directly at the files in this directory; they do not need to reside under
+.IR /etc/postfix .
+The generated files are world-readable (mode 644).
+.RS
+.PP
+Typical values by platform:
+.PP
+.PD 0
+.TP 28
+.I /var/lib/postallow
+Linux (systemd distributions)
+.TP
+.I /var/db/postallow
+FreeBSD, NetBSD
+.TP
+.I /var/postallow
+OpenBSD
+.PD
+.RE
+.TP
+.BI allowlist= filename
+Name of the allowlist file written inside
+.BR postfixpath .
+Default:
+.IR postscreen_spf_allowlist.cidr .
+.TP
+.BI blocklist= filename
+Name of the blocklist file written inside
+.BR postfixpath .
+Only used when
+.B enable_blocklist
+is
+.IR yes .
+Default:
+.IR postscreen_spf_blocklist.cidr .
+.TP
+.BI yahoo_static_hosts= path
+Path to
+.IR yahoo_static_hosts.txt ,
+shipped with
+.BR postallow ,
+containing a static list of Yahoo!, Verizon, and AOL outbound mail server
+IP addresses.
+Only read when
+.B include_yahoo
+is
+.IR yes .
+This file can be refreshed periodically with the
+.B scrape_yahoo
+script.
+.
+.SH OTHER OPTIONS
+.TP
+.BR include_yahoo = yes | no
+Whether to append the static Yahoo!/Verizon/AOL outbound IP list to the
+allowlist.
+Default:
+.IR yes .
+.TP
+.BR enable_blocklist = yes | no
+Whether to generate a blocklist in addition to the allowlist.
+Blocklist source domains are defined in the
+.B blocklist_hosts
+variable in the
+.B allowlist_hosts
+file.
+Default:
+.IR no .
+.
+.SH HOST LIST FILE
+The file pointed to by
+.B allowlist_hosts
+is a POSIX shell snippet that defines space-separated lists of sender
+domains.
+.B postallow
+supports the following variables:
+.TP
+.B email_hosts
+Webmail and personal e-mail providers.
+.TP
+.B social_hosts
+Social-network notification senders.
+.TP
+.B commerce_hosts
+E-commerce and payment providers.
+.TP
+.B bulk_hosts
+Bulk and transactional mail providers.
+.TP
+.B misc_hosts
+Miscellaneous senders.
+.TP
+.B custom_hosts
+User-supplied additions.
+Add your own domains here.
+.TP
+.B blocklist_hosts
+Domains whose SPF-resolved IPs are written to the blocklist.
+Only consulted when
+.B enable_blocklist
+is
+.IR yes .
+.PP
+Example:
+.PP
+.RS
+.nf
+custom_hosts="example.com mycompany.org"
+.fi
+.RE
+.
+.SH EXAMPLE
+.nf
+# /etc/postallow/postallow.conf
+
+allowlist_hosts=/etc/postallow/allowlist_hosts
+spftoolspath=/usr/local/bin/spf-tools
+postfixpath=/var/lib/postallow
+allowlist=postscreen_spf_allowlist.cidr
+blocklist=postscreen_spf_blocklist.cidr
+yahoo_static_hosts=/usr/local/share/postallow/yahoo_static_hosts.txt
+
+include_yahoo="yes"
+enable_blocklist=no
+.fi
+.
+.SH SEE ALSO
+.BR postallow (1),
+.BR postscreen (8),
+.BR postfix (1)
+.
+.SH AUTHORS
+Originally written by Steve Jenkins as
+.BR Postwhite .
+Renamed and maintained as
+.B Postallow
+from 2025 by Edmund Lodewijks.

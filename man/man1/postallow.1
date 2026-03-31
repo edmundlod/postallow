@@ -1,0 +1,121 @@
+.\" SPDX-License-Identifier: MIT
+.\"
+.TH POSTALLOW 1 "2026-04-01" "Postallow 3.11.0" "User Commands"
+.
+.SH NAME
+postallow \- generate a Postscreen allowlist (and optionally blocklist) from SPF records
+.
+.SH SYNOPSIS
+.B postallow
+.RI [ config-file ]
+.
+.SH DESCRIPTION
+.B postallow
+is a POSIX shell script that generates an allowlist (and optionally a blocklist)
+for Postfix's
+.BR postscreen (8),
+based on large senders' published SPF records.
+.PP
+It recursively queries the SPF records of the domains listed in the
+.I allowlist_hosts
+file, collects the resulting IP addresses and CIDR ranges, summarises them with
+.BR aggregateCIDR.pl (1)
+from the
+.B route-summarization
+package, and writes a flat CIDR file that Postfix reads directly via
+.BR postscreen_access_list .
+.PP
+.B postallow
+is designed to run as a dedicated unprivileged system user
+.RI ( postallow ).
+It writes its output to a directory owned by that user; Postfix reads the
+files from there directly.
+Reloading Postfix after a run is left to the init system \(em
+see the service units in
+.I contrib/systemd/
+(Linux/systemd) or
+.I contrib/freebsd/
+(FreeBSD rc.d).
+.
+.SH OPTIONS
+.TP
+.I config-file
+Path to an alternative configuration file.
+Overrides the default search path (see
+.B FILES
+below).
+.
+.SH FILES
+.B postallow
+searches for its configuration file in the following locations, in order.
+A path supplied on the command line takes precedence over all of them.
+.PP
+.PD 0
+.TP 4
+.I /etc/postallow.conf
+.TP
+.I /etc/postallow/postallow.conf
+.TP
+.I /usr/local/etc/postallow.conf
+.TP
+.I /usr/local/etc/postallow/postallow.conf
+.PD
+.PP
+See
+.BR postallow.conf (5)
+for a description of all configuration options.
+.
+.SH DEPENDENCIES
+.TP
+.B spf-tools
+Provides
+.BR despf.sh (1),
+used to recursively expand SPF \(lqinclude:\(rq chains.
+Available at
+.IR https://github.com/spf-tools/spf-tools .
+.TP
+.B route-summarization
+Provides
+.BR aggregateCIDR.pl (1),
+used to aggregate and summarise the resulting CIDR ranges.
+Available at
+.IR https://github.com/lquidfire/route-summarization .
+.
+.SH EXIT STATUS
+.TP
+.B 0
+Success.
+.TP
+.B 1
+The configuration file or the
+.I allowlist_hosts
+file could not be found, or temporary files could not be created.
+.
+.SH EXAMPLES
+Run with the default configuration file search path:
+.PP
+.RS
+.B postallow
+.RE
+.PP
+Run with an explicit configuration file:
+.PP
+.RS
+.B postallow /etc/postallow/postallow.conf
+.RE
+.
+.SH SEE ALSO
+.BR postallow.conf (5),
+.BR postscreen (8),
+.BR postfix (1)
+.
+.SH BUGS
+Please report bugs at
+.IR https://github.com/lquidfire/postallow/issues .
+.
+.SH AUTHORS
+Originally written by Steve Jenkins as
+.BR Postwhite .
+Renamed and maintained as
+.B Postallow
+from 2025 by Edmund Lodewijks.
