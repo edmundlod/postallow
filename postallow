@@ -74,7 +74,7 @@ elif [ -f "/usr/local/etc/postallow/postallow.conf" ]; then
 fi
 
 # Read config file options
-if [ ! -s $config_file ] ; then
+if [ ! -s "$config_file" ] ; then
 	printf "%s: Can't find %s. Exiting.\n" "$0" "$config_file" 1>&2
 	exit 1
 fi
@@ -82,7 +82,7 @@ printf "\nReading options from %s...\n" "$config_file"
 . "${config_file}"
 
 # Read file with hosts that should be allowed
-if [ ! -s $allowlist_hosts ] ; then
+if [ ! -s "$allowlist_hosts" ] ; then
 	printf "%s: Can't find %s. Exiting.\n" "$0" "$allowlist_hosts" 1>&2
 	exit 1
 fi
