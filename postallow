@@ -89,6 +89,22 @@ fi
 printf "\nReading options from %s...\n" "$allowlist_hosts"
 . "${allowlist_hosts}"
 
+# Remove temp files
+cleanup() {
+	test -e "${tmp1}" && rm "${tmp1}"
+	test -e "${tmp2}" && rm "${tmp2}"
+	test -e "${tmp3}" && rm "${tmp3}"
+	test -e "${tmp4}" && rm "${tmp4}"
+	test -e "${tmp5}" && rm "${tmp5}"
+	if [ x"$enable_blocklist" = x"yes" ] ; then
+		test -e "${blktmp1}" && rm "${blktmp1}"
+		test -e "${blktmp2}" && rm "${blktmp2}"
+		test -e "${blktmp3}" && rm "${blktmp3}"
+		test -e "${blktmp4}" && rm "${blktmp4}"
+		test -e "${blktmp5}" && rm "${blktmp5}"
+	fi
+}
+
 # Create temporary files
 printf "\nCreating temporary files...\n"
 tmpBase=$(basename "$0")
@@ -334,21 +350,6 @@ if [ x"$enable_blocklist" = x"yes" ] ; then
 	cat "${blktmp5}" >> "${postfixpath}"/"${blocklist}"
 fi
 
-# Remove temp files
-cleanup() {
-	test -e "${tmp1}" && rm "${tmp1}"
-	test -e "${tmp2}" && rm "${tmp2}"
-	test -e "${tmp3}" && rm "${tmp3}"
-	test -e "${tmp4}" && rm "${tmp4}"
-	test -e "${tmp5}" && rm "${tmp5}"
-	if [ x"$enable_blocklist" = x"yes" ] ; then
-		test -e "${blktmp1}" && rm "${blktmp1}"
-		test -e "${blktmp2}" && rm "${blktmp2}"
-		test -e "${blktmp3}" && rm "${blktmp3}"
-		test -e "${blktmp4}" && rm "${blktmp4}"
-		test -e "${blktmp5}" && rm "${blktmp5}"
-	fi
-}
 cleanup
 
 # Reload Postfix to pick up changes in allowlist
