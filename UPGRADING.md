@@ -71,19 +71,20 @@ If you have an existing cidr file that Postallow needs to overwrite:
 
 ### Step 6 — Install and enable the init scripts
 
+If you are on 4.1.0 or later, `make install` handles this step automatically.
+For a manual install:
+
 **systemd (Linux):**
 
-    cp contrib/postallow.service /etc/systemd/system/
-    cp contrib/postallow.timer /etc/systemd/system/
-    cp contrib/postallow-reload.service /etc/systemd/system/
-    cp contrib/postallow.path /etc/systemd/system/
+    cp contrib/systemd/postallow.service /etc/systemd/system/
+    cp contrib/systemd/postallow.timer   /etc/systemd/system/
     systemctl daemon-reload
     systemctl enable --now postallow.timer
 
 **FreeBSD:**
 
-    cp contrib/postallow.rc /usr/local/etc/rc.d/postallow
-    chmod 755 /usr/local/etc/rc.d/postallow
+    cp contrib/freebsd/postallow.rc /usr/local/etc/rc.d/postallow
+    chmod 555 /usr/local/etc/rc.d/postallow
     sysrc postallow_enable="YES"
     service postallow start
 
