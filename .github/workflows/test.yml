@@ -28,6 +28,7 @@ jobs:
         run: |
           DEBIAN_FRONTEND=noninteractive apt-get update -q
           DEBIAN_FRONTEND=noninteractive apt-get install -y \
+            procps \
             postfix \
             bind9-dnsutils \
             perl libnet-cidr-lite-perl libnetaddr-ip-perl \
