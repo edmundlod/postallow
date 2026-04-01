@@ -61,15 +61,28 @@ Create the directory owned by `postallow` with mode 755:
 
     install -d -o postallow -m 755 /var/lib/postallow   # adjust path for your platform
 
-## 2. Install and configure Postallow
+## 2. Install Postallow
 
-1. Clone or copy the Postallow repo to `/usr/local/bin/` (or wherever you prefer)
-2. Make sure you have [SPF-Tools](https://github.com/spf-tools/spf-tools) on your system
-3. Copy `postallow.conf` to the appropriate location for your platform and edit it:
-   - Linux: `/etc/postallow/postallow.conf`
-   - BSD: `/usr/local/etc/postallow/postallow.conf`
-4. Set `postfixpath` to the output directory created above (see the comments in `postallow.conf` for platform variants)
-5. Add any custom hosts to `allowlist_hosts`
+    make install
+
+The default prefix is `/usr/local`. Common overrides:
+
+    make install PREFIX=/usr SYSCONFDIR=/etc          # Linux, installing system-wide
+    make install PREFIX=/usr/local                    # BSDs, ports default
+
+Run `make help` to see all available variables and their defaults.
+
+`make install` places the init service unit for your platform (systemd on Linux, rc.d on BSDs) in the appropriate directory but does **not** enable or start it — see step 4.
+
+## 3. Configure Postallow
+
+Edit the configuration file installed at `SYSCONFDIR/postallow/postallow.conf` (e.g. `/etc/postallow/postallow.conf` or `/usr/local/etc/postallow/postallow.conf`):
+
+1. Set `postfixpath` to the output directory created in step 1
+2. Verify `spftoolspath` points to your SPF-Tools installation
+3. Add any custom domains to `allowlist_hosts`
+
+See `postallow.conf(5)` for a description of all options.
 
 The script searches for its config file in the following locations, in order:
 
@@ -83,7 +96,7 @@ You can always override by passing the path explicitly:
 
     /usr/local/bin/postallow /path/to/config-file
 
-## 3. Configure Postfix
+## 4. Configure Postfix
 
 Point Postfix's `postscreen_access_list` directly at the output directory. There is no need for the files to live under `/etc/postfix/` — Postfix will read them from wherever they are, as long as the `postfix` user can read them. The generated files are world-readable (mode 644).
 
@@ -95,27 +108,20 @@ Point Postfix's `postscreen_access_list` directly at the output directory. There
 
 Adjust the paths above to match the `postfixpath` you configured.
 
-## 4. Set up the init service
+## 5. Enable the init service
 
-Postallow generates the CIDR files but does not reload Postfix itself. The init service takes care of that, running `postfix reload` with the appropriate privileges after each run.
+`make install` installs the service unit for your platform but does not activate it.
 
 **systemd (most Linux distributions):**
 
-    cp contrib/systemd/postallow.service /etc/systemd/system/
-    cp contrib/systemd/postallow.timer   /etc/systemd/system/
     systemctl daemon-reload
     systemctl enable --now postallow.timer
-
-The service unit runs Postallow as the `postallow` user and reloads Postfix as root via `ExecStartPost=+`. Check that the path to `postfix` in `postallow.service` matches your system (typically `/usr/sbin/postfix`, but adjust if needed).
 
 To run immediately:
 
     systemctl start postallow.service
 
 **FreeBSD (rc.d):**
-
-    cp contrib/freebsd/postallow.rc /usr/local/etc/rc.d/postallow
-    chmod 555 /usr/local/etc/rc.d/postallow
 
 Enable in `/etc/rc.conf`:
 
@@ -148,7 +154,7 @@ It is still possible to update the list of known Yahoo! outbound IP addresses fr
 *(Please read more about Yahoo! hosts below)*
 
 # Options
-Options for Postallow are located in the ```postallow.conf``` file. See the config file search order under **Install and configure Postallow** above for where to place it on your platform.
+Options for Postallow are located in the ```postallow.conf``` file. See the config file search order under **Configure Postallow** above for where to place it on your platform.
 
 ## Custom Hosts
 By default, Postallow includes a number of well-known (and presumably trustworthy) mailers in five categories:
