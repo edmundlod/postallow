@@ -6,6 +6,7 @@ on:
 #    branches: ["main"]
   workflow_dispatch:
 
+jobs:
 
   # =========================================================================
   # Debian 13 (trixie) — Docker container, no systemd, runs as root
