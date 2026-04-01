@@ -1,0 +1,16 @@
+#!/usr/bin/make -f
+%:
+	dh $@
+
+override_dh_auto_build:
+	# nothing to build — pure shell script
+
+override_dh_auto_install:
+	$(MAKE) install \
+		PREFIX=/usr \
+		SYSCONFDIR=/etc \
+		COMPRESS_MAN=yes \
+		DESTDIR=$(CURDIR)/debian/postallow
+
+override_dh_installsystemd:
+	dh_installsystemd --no-enable --no-start

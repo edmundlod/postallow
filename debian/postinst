@@ -1,0 +1,30 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    configure)
+        # Create postallow system group and user if they don't exist
+        if ! getent group postallow > /dev/null 2>&1; then
+            addgroup --system postallow
+        fi
+        if ! getent passwd postallow > /dev/null 2>&1; then
+            adduser --system --ingroup postallow \
+                    --no-create-home \
+                    --home /var/lib/postallow \
+                    --shell /usr/sbin/nologin \
+                    --gecos "Postallow allowlist generator" \
+                    postallow
+        fi
+        # Create output directory owned by the postallow user
+        install -d -o postallow -g postallow -m 755 /var/lib/postallow
+        ;;
+    abort-upgrade|abort-remove|abort-deconfigure)
+        ;;
+    *)
+        echo "postinst called with unknown argument '$1'" >&2
+        exit 1
+        ;;
+esac
+
+#DEBHELPER#
+exit 0

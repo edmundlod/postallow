@@ -1,0 +1,21 @@
+Source: postallow
+Section: mail
+Priority: optional
+Maintainer: Edmund Lodewijks <edmund@proteamail.com>
+Build-Depends: debhelper-compat (= 13)
+Standards-Version: 4.6.2
+Homepage: https://github.com/edmundlod/postallow
+Rules-Requires-Root: no
+
+Package: postallow
+Architecture: all
+Depends: ${misc:Depends}, adduser, postfix, spf-tools, route-summarization
+Description: Postfix Postscreen allowlist and blocklist generator from SPF records
+ Postallow generates CIDR allowlists (and optionally blocklists) for Postfix's
+ Postscreen by expanding the SPF records of large, trusted mail senders such as
+ Google, Microsoft, and Yahoo. This allows legitimate mail from these providers
+ to bypass Postscreen's connection-level checks, reducing false positives.
+ .
+ Postallow runs as an unprivileged system user and is driven by a systemd
+ timer (Linux) or rc.d script (BSD). Postfix is reloaded automatically
+ after each successful run.

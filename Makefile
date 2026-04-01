@@ -80,8 +80,13 @@ install:
 	# --- sample config (do not overwrite an existing live config) ---
 	install -d -m 755 $(DESTDIR)$(SYSCONFDIR)/postallow
 	if [ ! -f $(DESTDIR)$(SYSCONFDIR)/postallow/postallow.conf ]; then \
-		install -m 644 conf/postallow.conf \
-			$(DESTDIR)$(SYSCONFDIR)/postallow/postallow.conf; \
+		sed \
+			-e 's|@BINDIR@|$(BINDIR)|g' \
+			-e 's|@SYSCONFDIR@|$(SYSCONFDIR)|g' \
+			-e 's|@DATADIR@|$(DATADIR)|g' \
+			conf/postallow.conf.in \
+			> $(DESTDIR)$(SYSCONFDIR)/postallow/postallow.conf; \
+		chmod 644 $(DESTDIR)$(SYSCONFDIR)/postallow/postallow.conf; \
 	fi
 	if [ ! -f $(DESTDIR)$(SYSCONFDIR)/postallow/allowlist_hosts ]; then \
 		install -m 644 conf/allowlist_hosts \

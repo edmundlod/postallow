@@ -1,15 +1,14 @@
 # CONFIGURATION OPTIONS FOR POSTALLOW
-# https://github.com/lquidfire/postallow
+# https://github.com/edmundlod/postallow
 
 # FILE PATHS
 
 # List with domains that should be allowed - edit if you like
-# Linux:
-allowlist_hosts=/etc/postallow/allowlist_hosts
-# FreeBSD / NetBSD / OpenBSD:
-#allowlist_hosts=/usr/local/etc/postallow/allowlist_hosts
+allowlist_hosts=@SYSCONFDIR@/postallow/allowlist_hosts
+
 # Location of spf-tools
-spftoolspath=/usr/local/bin/spf-tools
+spftoolspath=@BINDIR@/spf-tools
+
 # Destination of finished allow and block lists (see the next two lines for filenames)
 # Postallow writes these files as the postallow user (world-readable, mode 644).
 # Point Postfix's postscreen_access_list at this directory directly - no need for
@@ -27,7 +26,7 @@ allowlist=postscreen_spf_allowlist.cidr
 # Name of block list inside the above-chosen directory
 blocklist=postscreen_spf_blocklist.cidr
 # Location of yahoo static hosts that come with this version of Postallow
-yahoo_static_hosts=/usr/local/share/postallow/yahoo_static_hosts.txt
+yahoo_static_hosts=@DATADIR@/yahoo_static_hosts.txt
 
 
 # OTHER OPTIONS

@@ -1,0 +1,25 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    purge)
+        # Remove postallow user and group on purge
+        if getent passwd postallow > /dev/null 2>&1; then
+            deluser --system postallow || true
+        fi
+        if getent group postallow > /dev/null 2>&1; then
+            delgroup --system postallow || true
+        fi
+        # Remove output directory only on purge — may contain generated files
+        rm -rf /var/lib/postallow
+        ;;
+    remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+        ;;
+    *)
+        echo "postrm called with unknown argument '$1'" >&2
+        exit 1
+        ;;
+esac
+
+#DEBHELPER#
+exit 0
