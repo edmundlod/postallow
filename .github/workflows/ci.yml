@@ -391,3 +391,128 @@ jobs:
 
       - name: Verify CIDR output
         run: sh ci/verify.sh /var/lib/postallow/postscreen_spf_allowlist.cidr
+
+
+  # =========================================================================
+  # FreeBSD 15 — full VM via vmactions/freebsd-vm
+  #
+  # Key differences from Linux:
+  #   - Package manager: pkg (not apt/dnf)
+  #   - Perl modules: p5- prefix (p5-Net-CIDR-Lite, p5-NetAddr-IP)
+  #   - DNS tools: bind-tools (provides dig; base FreeBSD ships only host/nslookup)
+  #   - bash: not in base; spf-tools may need it — installed explicitly
+  #   - User creation: pw useradd (handled by contrib/install.sh already)
+  #   - Data directory: /var/db/postallow (not /var/lib/)
+  #   - Config paths: /usr/local/etc/postallow/ (not /etc/postallow/)
+  #   - postfix binary: /usr/local/sbin/postfix
+  #   - postfix config: /usr/local/etc/postfix/main.cf
+  #   - Service management: rc(8) with service(8); use onestart to run once
+  #     without permanently enabling the service in rc.conf
+  #
+  # vmactions syncs the checked-out workspace into the FreeBSD VM so all
+  # repo files are available to the run: block.
+  # =========================================================================
+  freebsd-15:
+    name: FreeBSD 15
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Test on FreeBSD 15
+        uses: vmactions/freebsd-vm@v1
+        with:
+          release: "15.0"
+          usesh: true
+
+          # prepare runs once as root to install OS packages before the test.
+          prepare: |
+            pkg install -y \
+              postfix \
+              bind-tools \
+              bash \
+              perl5 p5-Net-CIDR-Lite p5-NetAddr-IP \
+              git
+
+          # run executes in the synced workspace directory (the repo root).
+          run: |
+            set -e
+            
+            # --- Install spf-tools ---
+            git clone --depth=1 \
+              https://github.com/lquidfire/spf-tools \
+              /usr/local/bin/spf-tools
+            chmod +x /usr/local/bin/spf-tools/*.sh
+
+            # --- Install aggregateCIDR.pl ---
+            git clone --depth=1 \
+              https://github.com/lquidfire/route-summarization \
+              /opt/route-summarization
+            install -m 755 \
+              /opt/route-summarization/aggregateCIDR.pl \
+              /usr/local/bin/aggregateCIDR.pl
+
+            # --- Create postallow user and data directory ---
+            # contrib/install.sh detects FreeBSD via uname and uses pw(8).
+            sh contrib/install.sh
+
+            # --- Install postallow script, host list, and static data ---
+            install -m 755 postallow /usr/local/bin/postallow
+            install -d -m 755 /usr/local/etc/postallow
+            install -m 644 conf/allowlist_hosts \
+              /usr/local/etc/postallow/allowlist_hosts
+            install -d -m 755 /usr/local/share/postallow
+            install -m 644 yahoo_static_hosts.txt \
+              /usr/local/share/postallow/yahoo_static_hosts.txt
+
+            # --- Write postallow.conf (FreeBSD paths) ---
+            cat > /usr/local/etc/postallow/postallow.conf <<'CONF'
+            allowlist_hosts=/usr/local/etc/postallow/allowlist_hosts
+            spftoolspath=/usr/local/bin/spf-tools
+            postfixpath=/var/db/postallow
+            allowlist=postscreen_spf_allowlist.cidr
+            blocklist=postscreen_spf_blocklist.cidr
+            yahoo_static_hosts=/usr/local/share/postallow/yahoo_static_hosts.txt
+            include_yahoo=yes
+            enable_blocklist=no
+            CONF
+
+            # --- Configure postfix ---
+            
+            # Activate postfix as system mailer
+            sysrc postfix_enable="YES"
+            sysrc sendmail_enable="NONE"
+            mkdir -p /usr/local/etc/mail
+            install -m 0644 /usr/local/share/postfix/mailer.conf.postfix /usr/local/etc/mail/mailer.conf
+
+            cat >> /etc/periodic.conf <<'EOF'
+            daily_clean_hoststat_enable="NO"
+            daily_status_mail_rejects_enable="NO"
+            daily_status_include_submit_mailq="NO"
+            daily_submit_queuerun="NO"
+            EOF
+
+            # postfix on FreeBSD installs to /usr/local/etc/postfix/.
+            # Use loopback-only to avoid port 25 permission issues.
+            # Use maillog_file so postfix doesn't need syslogd running.
+            /usr/local/sbin/postconf -e "inet_interfaces = loopback-only"
+            /usr/local/sbin/postconf -e "maillog_file = /var/log/maillog"
+
+            touch /etc/aliases /var/log/maillog
+            /usr/local/bin/newaliases
+
+            # --- Start postfix ---
+            # 'onestart' starts the service for this session without adding
+            # postfix_enable="YES" to rc.conf permanently.
+            service postfix onestart
+            sleep 2
+
+            # --- Run postallow as postallow user (unprivileged half) ---
+            su -m postallow -c \
+              '/usr/local/bin/postallow /usr/local/etc/postallow/postallow.conf'
+
+            # --- Reload postfix as root (privileged half) ---
+            service postfix reload
+
+            # --- Verify output ---
+            sh ci/verify.sh /var/db/postallow/postscreen_spf_allowlist.cidr
