@@ -3,11 +3,11 @@ A script for generating a Postscreen allowlist (and optionally a blocklist) base
 
 | Platform | Status |
 |----------|--------|
-| Ubuntu 24.04 | (https://github.com/edmundlod/postallow/actions/workflows/ci.yml/badge.svg?job=ubuntu-2404)](https://github.com/edmundlod/postallow/actions/workflows/ci.yml) |
-| Debian 13 | (https://github.com/edmundlod/postallow/actions/workflows/ci.yml/badge.svg?job=debian-13)](https://github.com/edmundlod/postallow/actions/workflows/ci.yml) |
-| AlmaLinux 9 | (https://github.com/edmundlod/postallow/actions/workflows/ci.yml/badge.svg?job=almalinux-9)](https://github.com/edmundlod/postallow/actions/workflows/ci.yml) |
-| AlmaLinux 10 | (https://github.com/edmundlod/postallow/actions/workflows/ci.yml/badge.svg?job=almalinux-10)](https://github.com/edmundlod/postallow/actions/workflows/ci.yml) |
-| FreeBSD 15 | (https://github.com/edmundlod/postallow/actions/workflows/ci.yml/badge.svg?job=freebsd-15)](https://github.com/edmundlod/postallow/actions/workflows/ci.yml) |
+| Ubuntu 24.04 | [![Ubuntu 24.04](https://github.com/edmundlod/postallow/actions/workflows/ci.yml/badge.svg?job=ubuntu-2404)](https://github.com/edmundlod/postallow/actions/workflows/ci.yml) |
+| Debian 13 | [![Debian 13](https://github.com/edmundlod/postallow/actions/workflows/ci.yml/badge.svg?job=debian-13)](https://github.com/edmundlod/postallow/actions/workflows/ci.yml) |
+| AlmaLinux 9 | [![AlmaLinux 9](https://github.com/edmundlod/postallow/actions/workflows/ci.yml/badge.svg?job=almalinux-9)](https://github.com/edmundlod/postallow/actions/workflows/ci.yml) |
+| AlmaLinux 10 | [![AlmaLinux 10](https://github.com/edmundlod/postallow/actions/workflows/ci.yml/badge.svg?job=almalinux-10)](https://github.com/edmundlod/postallow/actions/workflows/ci.yml) |
+| FreeBSD 15 | [![FreeBSD 15](https://github.com/edmundlod/postallow/actions/workflows/ci.yml/badge.svg?job=freebsd-15)](https://github.com/edmundlod/postallow/actions/workflows/ci.yml) |
 
 # Why Postallow?
 Postallow uses the published SPF records from domains of known webmailers, social networks, ecommerce providers, and compliant bulk senders to generate a list of outbound mailer IP addresses and CIDR ranges to create a allowlist (and optionally a blocklist) for Postfix's Postscreen.
