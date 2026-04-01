@@ -30,7 +30,7 @@ In order to run `postallow` you will need:
 * A shell
 * Perl
 * [spf-tools](https://github.com/spf-tools/spf-tools)
-* [route-summarization](https://github.com/lquidfire/route-summarization)
+* [route-summarization](https://github.com/edmundlod/route-summarization)
 
 **Please update SPF-Tools whenever you update Postallow, as both are under continuous development, and sometimes new features of Postallow depend upon an updated version of SPF-Tools.**
 
@@ -40,7 +40,26 @@ Postallow also assumes that you have **Postfix** and the appropriate **bind-util
 
 Postallow is designed to run as a dedicated unprivileged user (`postallow`). It writes the generated CIDR files to a directory it owns; Postfix reads them directly from there. Reloading Postfix after a run is left to the init system (systemd, rc.d), which handles the privilege boundary cleanly without requiring sudo or root access for Postallow itself.
 
-## 1. Create the postallow user and output directory
+## 1. Install via apt (Debian 13 / trixie)
+
+The easiest way to install on Debian is via the apt repository, which handles
+all dependencies and user creation automatically:
+
+```bash
+sudo mkdir -p /usr/share/keyrings
+curl -fsSL https://edmundlod.github.io/apt/key.asc \
+  | sudo tee /usr/share/keyrings/edmundlod-apt.asc > /dev/null
+echo "deb [signed-by=/usr/share/keyrings/edmundlod-apt.asc] \
+https://edmundlod.github.io/apt trixie main" \
+  | sudo tee /etc/apt/sources.list.d/edmundlod.list
+sudo apt update
+sudo apt install postallow
+```
+
+Then skip to [step 4](#4-configure-postfix) to configure Postfix, and
+[step 5](#5-enable-the-init-service) to enable the service.
+
+## 2. Create the postallow user and output directory
 
 A helper script is provided for common platforms:
 
