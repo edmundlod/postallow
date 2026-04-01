@@ -89,8 +89,7 @@ jobs:
 
       - name: Run postallow as postallow user
         run: |
-          sudo -u postallow /usr/local/bin/postallow \
-            /etc/postallow/postallow.conf
+          su -s /bin/sh postallow -c '/usr/local/bin/postallow /etc/postallow/postallow.conf'
 
       - name: Reload postfix as root (privilege-separated step)
         run: sudo systemctl reload postfix
