@@ -42,7 +42,7 @@ jobs:
     runs-on: ubuntu-24.04
  
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
  
       # Pre-seed debconf so apt won't pop interactive prompts during install.
       # "Local only" gives postfix a working main.cf without requiring network MX.
@@ -125,7 +125,6 @@ jobs:
         run: sh ci/verify.sh /var/lib/postallow/postscreen_spf_allowlist.cidr
 
 
-
   # =========================================================================
   # Debian 13 (trixie) — Docker container, no systemd, runs as root
   # --privileged is required: postfix uses chroot(2) for its child processes,
@@ -140,12 +139,13 @@ jobs:
       options: --privileged
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install packages
         run: |
           DEBIAN_FRONTEND=noninteractive apt-get update -q
           DEBIAN_FRONTEND=noninteractive apt-get install -y \
+            procps \
             postfix \
             bind9-dnsutils \
             perl libnet-cidr-lite-perl libnetaddr-ip-perl \
@@ -207,11 +207,10 @@ jobs:
 
       - name: Run postallow as postallow user
         run: |
-          sudo -u postallow /usr/local/bin/postallow \
-            /etc/postallow/postallow.conf
+          su -s /bin/sh postallow -c '/usr/local/bin/postallow /etc/postallow/postallow.conf'
 
       - name: Reload postfix as root (privilege-separated step)
-        run: sudo systemctl reload postfix
+        run: postfix reload
 
       - name: Verify CIDR output
         run: sh ci/verify.sh /var/lib/postallow/postscreen_spf_allowlist.cidr
