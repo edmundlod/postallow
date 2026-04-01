@@ -1,6 +1,8 @@
 # Postallow - Automatic Postcreen Allowlist & Blocklist Generator
 A script for generating a Postscreen allowlist (and optionally a blocklist) based on large and presumably trustworthy senders' SPF records.
 
+[![CI](https://github.com/edmundlod/postallow/actions/workflows/ci.yml/badge.svg)](https://github.com/edmundlod/postallow/actions/workflows/ci.yml)
+
 # Why Postallow?
 Postallow uses the published SPF records from domains of known webmailers, social networks, ecommerce providers, and compliant bulk senders to generate a list of outbound mailer IP addresses and CIDR ranges to create a allowlist (and optionally a blocklist) for Postfix's Postscreen.
 
