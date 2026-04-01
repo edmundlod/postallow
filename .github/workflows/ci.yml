@@ -1,0 +1,125 @@
+name: CI
+ 
+# Run on every push to main and on every pull request targeting main.
+on:
+#  push:
+#    branches: ["main"]
+  workflow_dispatch:
+  pull_request:
+    branches: ["main"]
+ 
+# ---------------------------------------------------------------------------
+# Overview of what each job does
+# ---------------------------------------------------------------------------
+# Every job follows the same sequence:
+#   1. Install postfix, DNS tools, Perl + CIDR modules, and git.
+#   2. Clone spf-tools (provides despf.sh for SPF record expansion).
+#   3. Clone route-summarization (provides aggregateCIDR.pl for CIDR aggregation).
+#   4. Create the postallow system user and output directory (via contrib/install.sh).
+#   5. Install the postallow script + config + host list + static Yahoo data.
+#   6. Write a minimal postallow.conf pointing at the correct paths.
+#   7. Configure postfix (loopback-only listener; file-based logging for containers).
+#   8. Start postfix.
+#   9. Run postallow AS THE postallow USER — this is the unprivileged half of the
+#      privilege-separated design.  It writes the CIDR file but cannot touch postfix.
+#  10. Reload postfix AS ROOT — this is the privileged half (systemd ExecStartPost=+
+#      in production; explicit root step in CI).
+#  11. Run ci/verify.sh to assert the CIDR file is present, contains no duplicate
+#      entries, and contains only valid IP/CIDR notation throughout.
+#
+# DNS queries are REAL (no mocking).  The script has set -e, so a transient DNS
+# failure will cause the job to fail — this is intentional: it mirrors production
+# behaviour and prevents a silent empty-output false pass.
+# ---------------------------------------------------------------------------
+ 
+jobs:
+ 
+  # =========================================================================
+  # Ubuntu 24.04 — native GitHub-hosted runner, full systemd available
+  # =========================================================================
+  ubuntu-2404:
+    name: Ubuntu 24.04
+    runs-on: ubuntu-24.04
+ 
+    steps:
+      - uses: actions/checkout@v4
+ 
+      # Pre-seed debconf so apt won't pop interactive prompts during install.
+      # "Local only" gives postfix a working main.cf without requiring network MX.
+      - name: Install packages
+        run: |
+          echo "postfix postfix/main_mailer_type select Local only" \
+            | sudo debconf-set-selections
+          echo "postfix postfix/mailname string ci.local" \
+            | sudo debconf-set-selections
+          sudo DEBIAN_FRONTEND=noninteractive apt-get update -q
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+            postfix \
+            bind9-dnsutils \
+            perl libnet-cidr-lite-perl libnetaddr-ip-perl \
+            git
+ 
+      - name: Install spf-tools
+        run: |
+          sudo git clone --depth=1 \
+            https://github.com/lquidfire/spf-tools \
+            /usr/local/bin/spf-tools
+          sudo chmod +x /usr/local/bin/spf-tools/*.sh
+ 
+      - name: Install aggregateCIDR.pl
+        run: |
+          sudo git clone --depth=1 \
+            https://github.com/lquidfire/route-summarization \
+            /opt/route-summarization
+          sudo install -m 755 \
+            /opt/route-summarization/aggregateCIDR.pl \
+            /usr/local/bin/aggregateCIDR.pl
+ 
+      - name: Create postallow user and data directory
+        run: sudo sh contrib/install.sh
+ 
+      - name: Install postallow script, host list, and static data
+        run: |
+          sudo install -m 755 postallow /usr/local/bin/postallow
+          sudo install -d -m 755 /etc/postallow
+          sudo install -m 644 conf/allowlist_hosts /etc/postallow/allowlist_hosts
+          sudo install -d -m 755 /usr/local/share/postallow
+          sudo install -m 644 yahoo_static_hosts.txt \
+            /usr/local/share/postallow/yahoo_static_hosts.txt
+ 
+      - name: Write postallow.conf
+        run: |
+          cat > /tmp/postallow.conf <<'EOF'
+          allowlist_hosts=/etc/postallow/allowlist_hosts
+          spftoolspath=/usr/local/bin/spf-tools
+          postfixpath=/var/lib/postallow
+          allowlist=postscreen_spf_allowlist.cidr
+          blocklist=postscreen_spf_blocklist.cidr
+          yahoo_static_hosts=/usr/local/share/postallow/yahoo_static_hosts.txt
+          include_yahoo=yes
+          enable_blocklist=no
+          EOF
+          sudo install -m 644 /tmp/postallow.conf /etc/postallow/postallow.conf
+ 
+      # Restrict postfix to loopback so it never tries to open port 25 on
+      # a public interface.  Restart (not just start) to pick up the change
+      # in case apt already started postfix with the default config.
+      - name: Configure and start postfix
+        run: |
+          sudo postconf -e "inet_interfaces = loopback-only"
+          sudo systemctl restart postfix
+ 
+      # --- Core test: the privilege-separated run ---
+      - name: Run postallow as postallow user
+        run: |
+          sudo -u postallow /usr/local/bin/postallow \
+            /etc/postallow/postallow.conf
+ 
+      # This mirrors the ExecStartPost=+/usr/sbin/postfix reload line in the
+      # systemd service unit: a separate privileged operation after the
+      # unprivileged script has finished writing the file.
+      - name: Reload postfix as root (privilege-separated step)
+        run: sudo systemctl reload postfix
+ 
+      - name: Verify CIDR output
+        run: sh ci/verify.sh /var/lib/postallow/postscreen_spf_allowlist.cidr

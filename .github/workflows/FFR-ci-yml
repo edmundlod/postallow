@@ -1,0 +1,379 @@
+
+### FFR: To be added to .github/workflows/ci.yml once tested
+
+
+  # =========================================================================
+  # Debian 13 (trixie) — Docker container, no systemd, runs as root
+  # --privileged is required: postfix uses chroot(2) for its child processes,
+  # which needs CAP_SYS_CHROOT.  Containers have this by default only when
+  # --privileged is set.
+  # =========================================================================
+  debian-13:
+    name: Debian 13
+    runs-on: ubuntu-24.04
+    container:
+      image: debian:trixie
+      options: --privileged
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install packages
+        run: |
+          DEBIAN_FRONTEND=noninteractive apt-get update -q
+          DEBIAN_FRONTEND=noninteractive apt-get install -y \
+            postfix \
+            bind9-dnsutils \
+            perl libnet-cidr-lite-perl libnetaddr-ip-perl \
+            git
+
+      - name: Install spf-tools
+        run: |
+          git clone --depth=1 \
+            https://github.com/lquidfire/spf-tools \
+            /usr/local/bin/spf-tools
+          chmod +x /usr/local/bin/spf-tools/*.sh
+
+      - name: Install aggregateCIDR.pl
+        run: |
+          git clone --depth=1 \
+            https://github.com/lquidfire/route-summarization \
+            /opt/route-summarization
+          install -m 755 \
+            /opt/route-summarization/aggregateCIDR.pl \
+            /usr/local/bin/aggregateCIDR.pl
+
+      - name: Create postallow user and data directory
+        run: sh contrib/install.sh
+
+      - name: Install postallow script, host list, and static data
+        run: |
+          install -m 755 postallow /usr/local/bin/postallow
+          install -d -m 755 /etc/postallow
+          install -m 644 conf/allowlist_hosts /etc/postallow/allowlist_hosts
+          install -d -m 755 /usr/local/share/postallow
+          install -m 644 yahoo_static_hosts.txt \
+            /usr/local/share/postallow/yahoo_static_hosts.txt
+
+      - name: Write postallow.conf
+        run: |
+          cat > /etc/postallow/postallow.conf <<'EOF'
+          allowlist_hosts=/etc/postallow/allowlist_hosts
+          spftoolspath=/usr/local/bin/spf-tools
+          postfixpath=/var/lib/postallow
+          allowlist=postscreen_spf_allowlist.cidr
+          blocklist=postscreen_spf_blocklist.cidr
+          yahoo_static_hosts=/usr/local/share/postallow/yahoo_static_hosts.txt
+          include_yahoo=yes
+          enable_blocklist=no
+          EOF
+
+      # In a container there is no syslog daemon.  maillog_file tells postfix
+      # to write logs to a plain file instead of syslog (requires postfix >= 3.4,
+      # which Debian trixie ships).  Without this postfix start will succeed but
+      # log nothing and some distributions will print a warning.
+      - name: Configure and start postfix
+        run: |
+          postconf -e "inet_interfaces = loopback-only"
+          postconf -e "maillog_file = /var/log/mail.log"
+          touch /etc/aliases /var/log/mail.log
+          newaliases
+          postfix start
+          sleep 2
+
+      - name: Run postallow as postallow user
+        run: |
+          su -s /bin/sh postallow -c \
+            '/usr/local/bin/postallow /etc/postallow/postallow.conf'
+
+      - name: Reload postfix as root (privilege-separated step)
+        run: postfix reload
+
+      - name: Verify CIDR output
+        run: sh ci/verify.sh /var/lib/postallow/postscreen_spf_allowlist.cidr
+
+
+  # =========================================================================
+  # AlmaLinux 9 — Docker container, no systemd, runs as root
+  # RHEL family: package names differ from Debian (bind-utils, not bind9-dnsutils;
+  # dnf instead of apt; EPEL needed for some Perl modules).
+  # =========================================================================
+  almalinux-9:
+    name: AlmaLinux 9
+    runs-on: ubuntu-24.04
+    container:
+      image: almalinux:9
+      options: --privileged
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # epel-release provides perl-Net-CIDR-Lite and perl-NetAddr-IP which are
+      # not in the AlmaLinux base or AppStream repos.
+      - name: Install packages
+        run: |
+          dnf install -y epel-release
+          dnf install -y \
+            postfix \
+            bind-utils \
+            perl perl-Net-CIDR-Lite perl-NetAddr-IP \
+            git
+
+      - name: Install spf-tools
+        run: |
+          git clone --depth=1 \
+            https://github.com/lquidfire/spf-tools \
+            /usr/local/bin/spf-tools
+          chmod +x /usr/local/bin/spf-tools/*.sh
+
+      - name: Install aggregateCIDR.pl
+        run: |
+          git clone --depth=1 \
+            https://github.com/lquidfire/route-summarization \
+            /opt/route-summarization
+          install -m 755 \
+            /opt/route-summarization/aggregateCIDR.pl \
+            /usr/local/bin/aggregateCIDR.pl
+
+      - name: Create postallow user and data directory
+        run: sh contrib/install.sh
+
+      - name: Install postallow script, host list, and static data
+        run: |
+          install -m 755 postallow /usr/local/bin/postallow
+          install -d -m 755 /etc/postallow
+          install -m 644 conf/allowlist_hosts /etc/postallow/allowlist_hosts
+          install -d -m 755 /usr/local/share/postallow
+          install -m 644 yahoo_static_hosts.txt \
+            /usr/local/share/postallow/yahoo_static_hosts.txt
+
+      - name: Write postallow.conf
+        run: |
+          cat > /etc/postallow/postallow.conf <<'EOF'
+          allowlist_hosts=/etc/postallow/allowlist_hosts
+          spftoolspath=/usr/local/bin/spf-tools
+          postfixpath=/var/lib/postallow
+          allowlist=postscreen_spf_allowlist.cidr
+          blocklist=postscreen_spf_blocklist.cidr
+          yahoo_static_hosts=/usr/local/share/postallow/yahoo_static_hosts.txt
+          include_yahoo=yes
+          enable_blocklist=no
+          EOF
+
+      # AlmaLinux uses /var/log/maillog as its mail log path convention.
+      - name: Configure and start postfix
+        run: |
+          postconf -e "inet_interfaces = loopback-only"
+          postconf -e "maillog_file = /var/log/maillog"
+          touch /etc/aliases /var/log/maillog
+          newaliases
+          postfix start
+          sleep 2
+
+      - name: Run postallow as postallow user
+        run: |
+          su -s /bin/sh postallow -c \
+            '/usr/local/bin/postallow /etc/postallow/postallow.conf'
+
+      - name: Reload postfix as root (privilege-separated step)
+        run: postfix reload
+
+      - name: Verify CIDR output
+        run: sh ci/verify.sh /var/lib/postallow/postscreen_spf_allowlist.cidr
+
+
+  # =========================================================================
+  # AlmaLinux 10 — Docker container, no systemd, runs as root
+  # Structurally identical to AlmaLinux 9; separate job so failures are
+  # isolated and the version difference is visible in the CI matrix.
+  # =========================================================================
+  almalinux-10:
+    name: AlmaLinux 10
+    runs-on: ubuntu-24.04
+    container:
+      image: almalinux:10
+      options: --privileged
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install packages
+        run: |
+          dnf install -y epel-release
+          dnf install -y \
+            postfix \
+            bind-utils \
+            perl perl-Net-CIDR-Lite perl-NetAddr-IP \
+            git
+
+      - name: Install spf-tools
+        run: |
+          git clone --depth=1 \
+            https://github.com/lquidfire/spf-tools \
+            /usr/local/bin/spf-tools
+          chmod +x /usr/local/bin/spf-tools/*.sh
+
+      - name: Install aggregateCIDR.pl
+        run: |
+          git clone --depth=1 \
+            https://github.com/lquidfire/route-summarization \
+            /opt/route-summarization
+          install -m 755 \
+            /opt/route-summarization/aggregateCIDR.pl \
+            /usr/local/bin/aggregateCIDR.pl
+
+      - name: Create postallow user and data directory
+        run: sh contrib/install.sh
+
+      - name: Install postallow script, host list, and static data
+        run: |
+          install -m 755 postallow /usr/local/bin/postallow
+          install -d -m 755 /etc/postallow
+          install -m 644 conf/allowlist_hosts /etc/postallow/allowlist_hosts
+          install -d -m 755 /usr/local/share/postallow
+          install -m 644 yahoo_static_hosts.txt \
+            /usr/local/share/postallow/yahoo_static_hosts.txt
+
+      - name: Write postallow.conf
+        run: |
+          cat > /etc/postallow/postallow.conf <<'EOF'
+          allowlist_hosts=/etc/postallow/allowlist_hosts
+          spftoolspath=/usr/local/bin/spf-tools
+          postfixpath=/var/lib/postallow
+          allowlist=postscreen_spf_allowlist.cidr
+          blocklist=postscreen_spf_blocklist.cidr
+          yahoo_static_hosts=/usr/local/share/postallow/yahoo_static_hosts.txt
+          include_yahoo=yes
+          enable_blocklist=no
+          EOF
+
+      - name: Configure and start postfix
+        run: |
+          postconf -e "inet_interfaces = loopback-only"
+          postconf -e "maillog_file = /var/log/maillog"
+          touch /etc/aliases /var/log/maillog
+          newaliases
+          postfix start
+          sleep 2
+
+      - name: Run postallow as postallow user
+        run: |
+          su -s /bin/sh postallow -c \
+            '/usr/local/bin/postallow /etc/postallow/postallow.conf'
+
+      - name: Reload postfix as root (privilege-separated step)
+        run: postfix reload
+
+      - name: Verify CIDR output
+        run: sh ci/verify.sh /var/lib/postallow/postscreen_spf_allowlist.cidr
+
+
+  # =========================================================================
+  # FreeBSD 15 — full VM via vmactions/freebsd-vm
+  #
+  # Key differences from Linux:
+  #   - Package manager: pkg (not apt/dnf)
+  #   - Perl modules: p5- prefix (p5-Net-CIDR-Lite, p5-NetAddr-IP)
+  #   - DNS tools: bind-tools (provides dig; base FreeBSD ships only host/nslookup)
+  #   - bash: not in base; spf-tools may need it — installed explicitly
+  #   - User creation: pw useradd (handled by contrib/install.sh already)
+  #   - Data directory: /var/db/postallow (not /var/lib/)
+  #   - Config paths: /usr/local/etc/postallow/ (not /etc/postallow/)
+  #   - postfix binary: /usr/local/sbin/postfix
+  #   - postfix config: /usr/local/etc/postfix/main.cf
+  #   - Service management: rc(8) with service(8); use onestart to run once
+  #     without permanently enabling the service in rc.conf
+  #
+  # vmactions syncs the checked-out workspace into the FreeBSD VM so all
+  # repo files are available to the run: block.
+  # =========================================================================
+  freebsd-15:
+    name: FreeBSD 15
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Test on FreeBSD 15
+        uses: vmactions/freebsd-vm@v1
+        with:
+          release: "15.0"
+          usesh: true
+
+          # prepare runs once as root to install OS packages before the test.
+          prepare: |
+            pkg install -y \
+              postfix \
+              bind-tools \
+              bash \
+              perl5 p5-Net-CIDR-Lite p5-NetAddr-IP \
+              git
+
+          # run executes in the synced workspace directory (the repo root).
+          run: |
+            set -e
+
+            # --- Install spf-tools ---
+            git clone --depth=1 \
+              https://github.com/lquidfire/spf-tools \
+              /usr/local/bin/spf-tools
+            chmod +x /usr/local/bin/spf-tools/*.sh
+
+            # --- Install aggregateCIDR.pl ---
+            git clone --depth=1 \
+              https://github.com/lquidfire/route-summarization \
+              /opt/route-summarization
+            install -m 755 \
+              /opt/route-summarization/aggregateCIDR.pl \
+              /usr/local/bin/aggregateCIDR.pl
+
+            # --- Create postallow user and data directory ---
+            # contrib/install.sh detects FreeBSD via uname and uses pw(8).
+            sh contrib/install.sh
+
+            # --- Install postallow script, host list, and static data ---
+            install -m 755 postallow /usr/local/bin/postallow
+            install -d -m 755 /usr/local/etc/postallow
+            install -m 644 conf/allowlist_hosts \
+              /usr/local/etc/postallow/allowlist_hosts
+            install -d -m 755 /usr/local/share/postallow
+            install -m 644 yahoo_static_hosts.txt \
+              /usr/local/share/postallow/yahoo_static_hosts.txt
+
+            # --- Write postallow.conf (FreeBSD paths) ---
+            cat > /usr/local/etc/postallow/postallow.conf <<'CONF'
+            allowlist_hosts=/usr/local/etc/postallow/allowlist_hosts
+            spftoolspath=/usr/local/bin/spf-tools
+            postfixpath=/var/db/postallow
+            allowlist=postscreen_spf_allowlist.cidr
+            blocklist=postscreen_spf_blocklist.cidr
+            yahoo_static_hosts=/usr/local/share/postallow/yahoo_static_hosts.txt
+            include_yahoo=yes
+            enable_blocklist=no
+            CONF
+
+            # --- Configure postfix ---
+            # postfix on FreeBSD installs to /usr/local/etc/postfix/.
+            # Use loopback-only to avoid port 25 permission issues.
+            # Use maillog_file so postfix doesn't need syslogd running.
+            /usr/local/sbin/postconf -e "inet_interfaces = loopback-only"
+            /usr/local/sbin/postconf -e "maillog_file = /var/log/maillog"
+            touch /etc/aliases /var/log/maillog
+            /usr/local/sbin/newaliases
+
+            # --- Start postfix ---
+            # 'onestart' starts the service for this session without adding
+            # postfix_enable="YES" to rc.conf permanently.
+            service postfix onestart
+            sleep 2
+
+            # --- Run postallow as postallow user (unprivileged half) ---
+            su -m postallow -c \
+              '/usr/local/bin/postallow /usr/local/etc/postallow/postallow.conf'
+
+            # --- Reload postfix as root (privileged half) ---
+            service postfix reload
+
+            # --- Verify output ---
+            sh ci/verify.sh /var/db/postallow/postscreen_spf_allowlist.cidr
+
