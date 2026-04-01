@@ -1,4 +1,4 @@
-name: CI
+name: Test Postallow on different platforms
  
 # Run on every push to main and on every pull request targeting main.
 on:
