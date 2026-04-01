@@ -92,7 +92,7 @@ jobs:
           su -s /bin/sh postallow -c '/usr/local/bin/postallow /etc/postallow/postallow.conf'
 
       - name: Reload postfix as root (privilege-separated step)
-        run: sudo systemctl reload postfix
+        run: systemctl reload postfix
 
       - name: Verify CIDR output
         run: sh ci/verify.sh /var/lib/postallow/postscreen_spf_allowlist.cidr
