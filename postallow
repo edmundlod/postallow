@@ -191,7 +191,7 @@ query_yahoo_host() {
 
 # Create progress dots function
 show_dots() {
-	while ps "$1" >/dev/null; do
+	while kill -0 "$1" 2>/dev/null; do
 		printf "."
 		sleep 1
 	done
