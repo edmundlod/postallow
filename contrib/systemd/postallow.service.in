@@ -7,6 +7,23 @@ Wants=network-online.target
 [Service]
 Type=oneshot
 User=postallow
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/postallow
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+PrivateDevices=true
+LockPersonality=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+UMask=0022
+
 ExecStart=@BINDIR@/postallow
 # Reload Postfix after the list is updated. The leading '+' runs this specific
 # command as root, regardless of User= above - no sudo or doas required.
