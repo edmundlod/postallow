@@ -1,8 +1,17 @@
 #!/bin/sh
 set -e
 
+aa_remove() {
+    if command -v apparmor_parser > /dev/null 2>&1 && \
+       [ -d /sys/kernel/security/apparmor ] && \
+       [ -f /etc/apparmor.d/usr.bin.postallow ]; then
+        apparmor_parser -R /etc/apparmor.d/usr.bin.postallow || true
+    fi
+}
+
 case "$1" in
     purge)
+        aa_remove
         # Remove postallow user and group on purge
         if getent passwd postallow > /dev/null 2>&1; then
             deluser --system postallow || true
@@ -13,7 +22,10 @@ case "$1" in
         # Remove output directory only on purge — may contain generated files
         rm -rf /var/lib/postallow
         ;;
-    remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+    remove)
+        aa_remove
+        ;;
+    upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
         ;;
     *)
         echo "postrm called with unknown argument '$1'" >&2

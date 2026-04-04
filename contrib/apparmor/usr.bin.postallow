@@ -1,0 +1,91 @@
+# AppArmor profile for postallow
+# https://github.com/edmundlod/postallow
+#
+# Note: this profile is provided on a best-effort basis and has not been
+# tested on a live system. If you run into denials, check audit.log and
+# adjust accordingly. Contributions welcome.
+#
+# Install:
+#   cp usr.bin.postallow /etc/apparmor.d/
+#   apparmor_parser -r /etc/apparmor.d/usr.bin.postallow
+#
+# This profile assumes the Debian package layout (PREFIX=/usr).
+# For /usr/local installs, replace /usr/bin with /usr/local/bin and
+# /usr/share with /usr/local/share throughout.
+
+#include <tunables/global>
+
+/usr/bin/postallow {
+  #include <abstractions/base>
+  #include <abstractions/nameservice>
+
+  # --- postallow itself ---
+  /usr/bin/postallow r,
+
+  # --- shell interpreter and POSIX utilities (inherit confinement) ---
+  /bin/sh         ix,
+  /usr/bin/sh     ix,
+  /bin/dash       ix,
+  /usr/bin/dash   ix,
+
+  /bin/cat        ix,
+  /usr/bin/cat    ix,
+  /usr/bin/awk    ix,
+  /usr/bin/gawk   ix,
+  /usr/bin/mawk   ix,
+  /usr/bin/grep   ix,
+  /usr/bin/sed    ix,
+  /usr/bin/cut    ix,
+  /usr/bin/sort   ix,
+  /usr/bin/uniq   ix,
+  /usr/bin/wc     ix,
+  /usr/bin/mktemp ix,
+  /usr/bin/date   ix,
+  /usr/bin/basename ix,
+  /usr/bin/expr   ix,
+  /usr/bin/kill   ix,
+  /bin/kill       ix,
+
+  # --- DNS lookup used by despf.sh ---
+  /usr/bin/host   ix,
+  network inet  dgram,
+  network inet6 dgram,
+  network inet  stream,
+  network inet6 stream,
+  network unix  stream,   # systemd-resolved stub socket
+
+  # --- spf-tools (despf.sh and its sourced includes) ---
+  /usr/bin/spf-tools/              r,
+  /usr/bin/spf-tools/**            r,
+  /usr/bin/spf-tools/despf.sh     ix,
+
+  # --- aggregateCIDR.pl (route-summarization) ---
+  /usr/bin/aggregateCIDR.pl        r,
+  /usr/bin/perl                   ix,
+  /usr/lib/perl{,5}/              r,
+  /usr/lib/perl{,5}/**            r,
+  /usr/share/perl{,5}/            r,
+  /usr/share/perl{,5}/**          r,
+  /usr/lib/@{multiarch}/perl{,5}/ r,
+  /usr/lib/@{multiarch}/perl{,5}/**  r,
+
+  # --- config and static data (read-only) ---
+  /etc/postallow/                 r,
+  /etc/postallow/**               r,
+  /usr/share/postallow/           r,
+  /usr/share/postallow/**         r,
+
+  # --- output directory (postallow user owns this) ---
+  /var/lib/postallow/             rw,
+  /var/lib/postallow/**           rw,
+
+  # --- temp files ---
+  # postallow uses mktemp /tmp/postallow.XXXXXX (5 files)
+  # despf.sh uses mktemp /tmp/despf-loop-XXXXXXX
+  /tmp/postallow.*                rw,
+  /tmp/despf-loop-*               rw,
+
+  # --- /proc: needed for show_dots() kill -0 <pid> check ---
+  @{PROC}/@{pid}/  r,
+  @{PROC}/@{pid}/status r,
+}

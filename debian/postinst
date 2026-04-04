@@ -17,6 +17,13 @@ case "$1" in
         fi
         # Create output directory owned by the postallow user
         install -d -o postallow -g postallow -m 755 /var/lib/postallow
+
+        # Load AppArmor profile if AppArmor is active
+        if command -v apparmor_parser > /dev/null 2>&1 && \
+           [ -d /sys/kernel/security/apparmor ] && \
+           [ -f /etc/apparmor.d/usr.bin.postallow ]; then
+            apparmor_parser -r /etc/apparmor.d/usr.bin.postallow || true
+        fi
         ;;
     abort-upgrade|abort-remove|abort-deconfigure)
         ;;

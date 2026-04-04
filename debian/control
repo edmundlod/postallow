@@ -10,6 +10,7 @@ Rules-Requires-Root: no
 Package: postallow
 Architecture: all
 Depends: ${misc:Depends}, adduser, postfix, spf-tools, route-summarization
+Suggests: apparmor
 Description: Postfix Postscreen allowlist and blocklist generator from SPF records
  Postallow generates CIDR allowlists (and optionally blocklists) for Postfix's
  Postscreen by expanding the SPF records of large, trusted mail senders such as

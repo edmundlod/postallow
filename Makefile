@@ -116,6 +116,17 @@ install:
 	# installed as documentation rather than an executable tool.
 	install -m 644 scripts/query_mailer_ovh $(DESTDIR)$(DOCDIR)/query_mailer_ovh.example
 
+	# --- AppArmor profile (Linux only) ---
+	@case "$$(uname -s)" in \
+	Linux) \
+		echo "# apparmor"; \
+		install -d -m 755 $(DESTDIR)/etc/apparmor.d; \
+		install -m 644 contrib/apparmor/usr.bin.postallow \
+			$(DESTDIR)/etc/apparmor.d/usr.bin.postallow; \
+		echo "  installed: /etc/apparmor.d/usr.bin.postallow"; \
+		;; \
+	esac
+
 	# --- init service units – platform detected at install time ---
 	@case "$$(uname -s)" in \
 	Linux) \
@@ -177,6 +188,7 @@ uninstall:
 	Linux) \
 		rm -f $(DESTDIR)$(SYSTEMD_UNITDIR)/postallow.service; \
 		rm -f $(DESTDIR)$(SYSTEMD_UNITDIR)/postallow.timer; \
+		rm -f $(DESTDIR)/etc/apparmor.d/usr.bin.postallow; \
 		;; \
 	FreeBSD) \
 		rm -f $(DESTDIR)$(RCDIR_FREEBSD)/postallow; \
