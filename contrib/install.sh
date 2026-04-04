@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 # Postallow install helper
-# https://github.com/lquidfire/postallow
+# https://github.com/edmundlod/postallow
 #
 # Creates the postallow system user and output directory for common platforms.
 # This is a convenience script - OS packagers should handle this in their own
