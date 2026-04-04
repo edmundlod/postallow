@@ -1,3 +1,11 @@
+postallow (4.1.2-1) trixie; urgency=low
+
+  * Harden systemd service unit with sandboxing directives.
+  * Rename postallow.service to postallow.service.in (template).
+  * Set UMask=0022 in service unit for consistent output file permissions.
+
+ -- Edmund Lodewijks <edmund@proteamail.com>  Fri, 04 Apr 2026 00:00:00 +0000
+
 postallow (4.1.1-1) trixie; urgency=low
 
   * Fix service file to use @BINDIR@ substitution; was hardcoded to
