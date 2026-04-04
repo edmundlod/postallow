@@ -62,14 +62,14 @@ jobs:
       - name: Install spf-tools
         run: |
           sudo git clone --depth=1 \
-            https://github.com/lquidfire/spf-tools \
+            https://github.com/edmundlod/spf-tools \
             /usr/local/bin/spf-tools
           sudo chmod +x /usr/local/bin/spf-tools/*.sh
  
       - name: Install aggregateCIDR.pl
         run: |
           sudo git clone --depth=1 \
-            https://github.com/lquidfire/route-summarization \
+            https://github.com/edmundlod/route-summarization \
             /opt/route-summarization
           sudo install -m 755 \
             /opt/route-summarization/aggregateCIDR.pl \
@@ -154,14 +154,14 @@ jobs:
       - name: Install spf-tools
         run: |
           git clone --depth=1 \
-            https://github.com/lquidfire/spf-tools \
+            https://github.com/edmundlod/spf-tools \
             /usr/local/bin/spf-tools
           chmod +x /usr/local/bin/spf-tools/*.sh
 
       - name: Install aggregateCIDR.pl
         run: |
           git clone --depth=1 \
-            https://github.com/lquidfire/route-summarization \
+            https://github.com/edmundlod/route-summarization \
             /opt/route-summarization
           install -m 755 \
             /opt/route-summarization/aggregateCIDR.pl \
@@ -246,14 +246,14 @@ jobs:
       - name: Install spf-tools
         run: |
           git clone --depth=1 \
-            https://github.com/lquidfire/spf-tools \
+            https://github.com/edmundlod/spf-tools \
             /usr/local/bin/spf-tools
           chmod +x /usr/local/bin/spf-tools/*.sh
 
       - name: Install aggregateCIDR.pl
         run: |
           git clone --depth=1 \
-            https://github.com/lquidfire/route-summarization \
+            https://github.com/edmundlod/route-summarization \
             /opt/route-summarization
           install -m 755 \
             /opt/route-summarization/aggregateCIDR.pl \
@@ -334,14 +334,14 @@ jobs:
       - name: Install spf-tools
         run: |
           git clone --depth=1 \
-            https://github.com/lquidfire/spf-tools \
+            https://github.com/edmundlod/spf-tools \
             /usr/local/bin/spf-tools
           chmod +x /usr/local/bin/spf-tools/*.sh
 
       - name: Install aggregateCIDR.pl
         run: |
           git clone --depth=1 \
-            https://github.com/lquidfire/route-summarization \
+            https://github.com/edmundlod/route-summarization \
             /opt/route-summarization
           install -m 755 \
             /opt/route-summarization/aggregateCIDR.pl \
@@ -440,13 +440,13 @@ jobs:
             
             # --- Install spf-tools ---
             git clone --depth=1 \
-              https://github.com/lquidfire/spf-tools \
+              https://github.com/edmundlod/spf-tools \
               /usr/local/bin/spf-tools
             chmod +x /usr/local/bin/spf-tools/*.sh
 
             # --- Install aggregateCIDR.pl ---
             git clone --depth=1 \
-              https://github.com/lquidfire/route-summarization \
+              https://github.com/edmundlod/route-summarization \
               /opt/route-summarization
             install -m 755 \
               /opt/route-summarization/aggregateCIDR.pl \
