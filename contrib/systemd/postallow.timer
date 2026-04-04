@@ -1,6 +1,6 @@
 [Unit]
 Description=Run Postallow daily to refresh Postscreen allowlist/blocklist
-Documentation=https://github.com/lquidfire/postallow
+Documentation=https://github.com/edmundlod/postallow
 
 [Timer]
 # Run once per day. RandomizedDelaySec spreads the load if multiple machines
