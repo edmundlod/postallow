@@ -1,6 +1,6 @@
 [Unit]
 Description=Postallow - Postscreen allowlist/blocklist generator
-Documentation=https://github.com/lquidfire/postallow
+Documentation=https://github.com/edmundlod/postallow
 After=network-online.target
 Wants=network-online.target
 
