@@ -121,8 +121,10 @@ install:
 	Linux) \
 		echo "# init (systemd)"; \
 		install -d -m 755 $(DESTDIR)$(SYSTEMD_UNITDIR); \
-		install -m 644 contrib/systemd/postallow.service \
-			$(DESTDIR)$(SYSTEMD_UNITDIR)/postallow.service; \
+		sed -e 's|@BINDIR@|$(BINDIR)|g' \
+			contrib/systemd/postallow.service \
+			> $(DESTDIR)$(SYSTEMD_UNITDIR)/postallow.service; \
+		chmod 644 $(DESTDIR)$(SYSTEMD_UNITDIR)/postallow.service; \
 		install -m 644 contrib/systemd/postallow.timer \
 			$(DESTDIR)$(SYSTEMD_UNITDIR)/postallow.timer; \
 		echo "  installed: $(SYSTEMD_UNITDIR)/postallow.{service,timer}"; \
