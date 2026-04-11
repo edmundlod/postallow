@@ -1,3 +1,9 @@
+postallow (4.3.0-2) trixie; urgency=low
+
+  * Remove postinst migration script; add upgrade note to changelog instead.
+
+ -- Edmund Lodewijks <edmund@proteamail.com>  Fri, 11 Apr 2026 00:00:00 +0000
+
 postallow (4.3.0-1) trixie; urgency=low
 
   * Split allowlist_hosts into package-managed /usr/share/postallow/allowlist_hosts
