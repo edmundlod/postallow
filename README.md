@@ -233,7 +233,7 @@ By the original author:
 # More Info
 A blog post by the original author discussing how Postallow came to be is here:
 
-http://www.stevejenkins.com/blog/2015/11/postscreen-allowlisting-smtp-outbound-ip-addresses-large-webmail-providers/
+[https://www.stevejenkins.com/blog/2015/11/postscreen-whitelisting-smtp-outbound-ip-addresses-large-webmail-providers/](https://www.stevejenkins.com/blog/2015/11/postscreen-whitelisting-smtp-outbound-ip-addresses-large-webmail-providers/)
 
 # Suggestions for Additional Mailers
 If you're a Postfix admin who sees a good number of ```PASS OLD``` entries for Postscreen in your mail logs, and have a suggestion for an additional mail host that might be a good candidate to include in Postallow, please open an issue for the host(s) to be added to `postallow`.
