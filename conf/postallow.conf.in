@@ -26,6 +26,6 @@ output_dir=@OUTPUTDIR@
 # Run scrape_yahoo periodically to keep the list fresh.
 include_yahoo="no"
 
-# Build a blocklist as well?
+# Use a blocklist as well?
 # List domains to block in the blocklist_hosts section of allowlist_hosts.
 enable_blocklist=no
