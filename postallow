@@ -7,8 +7,8 @@
 # Renamed and updated in 2025 by Edmund Lodewijks                 #
 ###################################################################
 
-version="4.1.2"
-lastupdated="2026-04-04"
+version="4.1.3"
+lastupdated="2026-04-11"
 
 # Usage: 1) Place entire /postallow directory in /usr/local/scripts
 #	 2) Move (and modify, if needed) postallow.conf to /etc

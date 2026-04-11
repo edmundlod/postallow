@@ -1,3 +1,9 @@
+postallow (4.1.3-1) trixie; urgency=low
+
+  * Add RPM spec file and build workflow for AlmaLinux 10.
+
+ -- Edmund Lodewijks <edmund@proteamail.com>  Fri, 11 Apr 2026 00:00:00 +0000
+
 postallow (4.1.2-1) trixie; urgency=low
 
   * Harden systemd service unit with sandboxing directives.

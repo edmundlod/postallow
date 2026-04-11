@@ -1,4 +1,4 @@
-%{!?pkg_version: %global pkg_version 4.1.2}
+%{!?pkg_version: %global pkg_version 4.1.3}
 
 Name:           postallow
 Version:        %{pkg_version}
@@ -81,5 +81,5 @@ fi
 %license %{_docdir}/%{name}/LICENSE.md
 
 %changelog
-* Sat Apr 11 2026 Edmund Lodewijks <edmund@proteamail.com> - 4.1.2-1
+* Sat Apr 11 2026 Edmund Lodewijks <edmund@proteamail.com> - 4.1.3-1
 - Initial RPM packaging
