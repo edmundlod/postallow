@@ -1,4 +1,4 @@
-%{!?pkg_version: %global pkg_version 4.1.3}
+%{!?pkg_version: %global pkg_version 4.2.0}
 
 Name:           postallow
 Version:        %{pkg_version}
@@ -81,5 +81,7 @@ fi
 %license %{_docdir}/%{name}/LICENSE.md
 
 %changelog
-* Sat Apr 11 2026 Edmund Lodewijks <edmund@proteamail.com> - 4.1.3-1
-- Initial RPM packaging
+* Sat Apr 11 2026 Edmund Lodewijks <edmund@proteamail.com> - 4.2.0-1
+- Rename postfixpath to output_dir; stamp platform default via make install
+- Remove allowlist, blocklist, yahoo_static_hosts from conf (hardcoded defaults)
+- Change include_yahoo default to no

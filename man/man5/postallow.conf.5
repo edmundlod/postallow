@@ -1,6 +1,6 @@
 .\" SPDX-License-Identifier: MIT
 .\"
-.TH POSTALLOW.CONF 5 "2026-04-11" "Postallow 4.1.3" "File Formats"
+.TH POSTALLOW.CONF 5 "2026-04-11" "Postallow 4.2.0" "File Formats"
 .
 .SH NAME
 postallow.conf \- configuration file for
@@ -47,7 +47,7 @@ from the
 .B spf-tools
 package.
 .TP
-.BI postfixpath= path
+.BI output_dir= path
 Directory to which
 .B postallow
 writes the generated CIDR files.
@@ -59,61 +59,26 @@ Point Postfix's
 directly at the files in this directory; they do not need to reside under
 .IR /etc/postfix .
 The generated files are world-readable (mode 644).
-.RS
-.PP
-Typical values by platform:
-.PP
-.PD 0
-.TP 28
-.I /var/lib/postallow
-Linux (systemd distributions)
-.TP
+Set automatically by the installer for the current platform
+.RI ( /var/lib/postallow
+on Linux,
 .I /var/db/postallow
-FreeBSD, NetBSD
-.TP
+on FreeBSD/NetBSD,
 .I /var/postallow
-OpenBSD
-.PD
-.RE
-.TP
-.BI allowlist= filename
-Name of the allowlist file written inside
-.BR postfixpath .
-Default:
-.IR postscreen_spf_allowlist.cidr .
-.TP
-.BI blocklist= filename
-Name of the blocklist file written inside
-.BR postfixpath .
-Only used when
-.B enable_blocklist
-is
-.IR yes .
-Default:
-.IR postscreen_spf_blocklist.cidr .
-.TP
-.BI yahoo_static_hosts= path
-Path to
-.IR yahoo_static_hosts.txt ,
-shipped with
-.BR postallow ,
-containing a static list of Yahoo!, Verizon, and AOL outbound mail server
-IP addresses.
-Only read when
-.B include_yahoo
-is
-.IR yes .
-This file can be refreshed periodically with the
-.B scrape_yahoo
-script.
+on OpenBSD).
 .
 .SH OTHER OPTIONS
 .TP
 .BR include_yahoo = yes | no
-Whether to append the static Yahoo!/Verizon/AOL outbound IP list to the
-allowlist.
+Whether to append additional Yahoo!/Verizon/AOL outbound IPs scraped from
+senders.yahooinc.com to the allowlist.
+Yahoo IPs are already obtained from their SPF records; this adds any extras
+not covered there.
+The static list can be refreshed with the
+.B scrape_yahoo
+script.
 Default:
-.IR yes .
+.IR no .
 .TP
 .BR enable_blocklist = yes | no
 Whether to generate a blocklist in addition to the allowlist.
@@ -172,13 +137,10 @@ custom_hosts="example.com mycompany.org"
 # /etc/postallow/postallow.conf
 
 allowlist_hosts=/etc/postallow/allowlist_hosts
-spftoolspath=/usr/local/bin/spf-tools
-postfixpath=/var/lib/postallow
-allowlist=postscreen_spf_allowlist.cidr
-blocklist=postscreen_spf_blocklist.cidr
-yahoo_static_hosts=/usr/local/share/postallow/yahoo_static_hosts.txt
+spftoolspath=/usr/bin/spf-tools
+output_dir=/var/lib/postallow
 
-include_yahoo="yes"
+include_yahoo="no"
 enable_blocklist=no
 .fi
 .

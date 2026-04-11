@@ -3,36 +3,26 @@
 
 # FILE PATHS
 
-# List with domains that should be allowed - edit if you like
+# List of domains to allow — edit to taste
 allowlist_hosts=@SYSCONFDIR@/postallow/allowlist_hosts
 
 # Location of spf-tools
 spftoolspath=@BINDIR@/spf-tools
 
-# Destination of finished allow and block lists (see the next two lines for filenames)
+# Directory where the generated CIDR files are written.
 # Postallow writes these files as the postallow user (world-readable, mode 644).
-# Point Postfix's postscreen_access_list at this directory directly - no need for
-# files to live under /etc/postfix.
-#
-# Linux (systemd distros):
-postfixpath=/var/lib/postallow
-# FreeBSD:
-#postfixpath=/var/db/postallow
-# OpenBSD / NetBSD:
-#postfixpath=/var/postallow
-
-# Name of allow list inside the above-chosen directory
-allowlist=postscreen_spf_allowlist.cidr
-# Name of block list inside the above-chosen directory
-blocklist=postscreen_spf_blocklist.cidr
-# Location of yahoo static hosts that come with this version of Postallow
-yahoo_static_hosts=@DATADIR@/yahoo_static_hosts.txt
+# Point Postfix's postscreen_access_list at this directory directly — no need
+# for files to live under /etc/postfix.
+output_dir=@OUTPUTDIR@
 
 
 # OTHER OPTIONS
 
-# Include list of Yahoo, Verizon, and AOL Outbound IPs from https://senders.yahooinc.com/outbound-mail-servers/?
-include_yahoo="yes"
+# Include additional Yahoo/Verizon/AOL outbound IPs scraped from
+# senders.yahooinc.com (on top of those already in Yahoo's SPF records).
+# Run scrape_yahoo periodically to keep the list fresh.
+include_yahoo="no"
 
-# Do you also want to build a blocklist? (Tip: List domains to be blocked in the file `blocklist_hosts`)
+# Build a blocklist as well?
+# List domains to block in the blocklist_hosts section of allowlist_hosts.
 enable_blocklist=no

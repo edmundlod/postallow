@@ -1,3 +1,13 @@
+postallow (4.2.0-1) trixie; urgency=low
+
+  * Rename postfixpath to output_dir in postallow.conf.
+  * Remove allowlist, blocklist, yahoo_static_hosts from postallow.conf
+    (hardcoded defaults; backward-compatible with existing configs).
+  * output_dir now stamped by make install for the correct platform.
+  * Change include_yahoo default to "no".
+
+ -- Edmund Lodewijks <edmund@proteamail.com>  Fri, 11 Apr 2026 00:00:00 +0000
+
 postallow (4.1.3-1) trixie; urgency=low
 
   * Add RPM spec file and build workflow for AlmaLinux 10.

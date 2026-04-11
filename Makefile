@@ -22,6 +22,19 @@ DATADIR     ?= $(PREFIX)/share/postallow
 MANDIR      ?= $(PREFIX)/share/man
 DOCDIR      ?= $(PREFIX)/share/doc/postallow
 
+# Output directory for the generated CIDR files.
+# Defaults are platform-specific; override on the command line if needed.
+_UNAME_S := $(shell uname -s)
+ifeq ($(_UNAME_S),FreeBSD)
+  OUTPUTDIR ?= /var/db/postallow
+else ifeq ($(_UNAME_S),OpenBSD)
+  OUTPUTDIR ?= /var/postallow
+else ifeq ($(_UNAME_S),NetBSD)
+  OUTPUTDIR ?= /var/db/postallow
+else
+  OUTPUTDIR ?= /var/lib/postallow
+endif
+
 # Init system unit directories – override if your layout differs.
 # On Linux the systemd units go to the vendor preset directory (not /etc).
 # On FreeBSD/NetBSD ports install rc.d scripts under PREFIX/etc/rc.d.
@@ -84,6 +97,7 @@ install:
 			-e 's|@BINDIR@|$(BINDIR)|g' \
 			-e 's|@SYSCONFDIR@|$(SYSCONFDIR)|g' \
 			-e 's|@DATADIR@|$(DATADIR)|g' \
+			-e 's|@OUTPUTDIR@|$(OUTPUTDIR)|g' \
 			conf/postallow.conf.in \
 			> $(DESTDIR)$(SYSCONFDIR)/postallow/postallow.conf; \
 		chmod 644 $(DESTDIR)$(SYSCONFDIR)/postallow/postallow.conf; \
