@@ -40,10 +40,11 @@ Postallow also assumes that you have **Postfix** and the appropriate **bind-util
 
 Postallow is designed to run as a dedicated unprivileged user (`postallow`). It writes the generated CIDR files to a directory it owns; Postfix reads them directly from there. Reloading Postfix after a run is left to the init system (systemd, rc.d), which handles the privilege boundary cleanly without requiring sudo or root access for Postallow itself.
 
-## 1. Install via apt (Debian 13 / trixie)
+# Installation
 
-The easiest way to install on Debian is via the apt repository, which handles
-all dependencies and user creation automatically:
+## via apt (Debian 13 / trixie)
+
+The apt repository handles all dependencies and user creation automatically:
 
 ```bash
 sudo mkdir -p /usr/share/keyrings
@@ -56,10 +57,26 @@ sudo apt update
 sudo apt install postallow
 ```
 
-Then skip to [step 4](#4-configure-postfix) to configure Postfix, and
-[step 5](#5-enable-the-init-service) to enable the service.
+Then continue with [Configure Postallow](#configure-postallow).
 
-## 2. Create the postallow user and output directory
+## via dnf (AlmaLinux 10 / RHEL 10)
+
+The RPM repository handles all dependencies and user creation automatically.
+EPEL must be enabled for the `perl-Net-CIDR-Lite` dependency:
+
+```bash
+sudo dnf install epel-release
+sudo rpm --import https://edmundlod.github.io/rpm/key.asc
+sudo curl -fsSL https://edmundlod.github.io/rpm/edmundlod.repo \
+  -o /etc/yum.repos.d/edmundlod.repo
+sudo dnf install postallow
+```
+
+Then continue with [Configure Postallow](#configure-postallow).
+
+## Manual installation
+
+### 1. Create the postallow user and output directory
 
 A helper script is provided for common platforms:
 
@@ -80,7 +97,7 @@ Create the directory owned by `postallow` with mode 755:
 
     install -d -o postallow -m 755 /var/lib/postallow   # adjust path for your platform
 
-## 2. Install Postallow
+### 2. Install Postallow
 
     make install
 
@@ -91,13 +108,13 @@ The default prefix is `/usr/local`. Common overrides:
 
 Run `make help` to see all available variables and their defaults.
 
-`make install` places the init service unit for your platform (systemd on Linux, rc.d on BSDs) in the appropriate directory but does **not** enable or start it — see step 4.
+`make install` places the init service unit for your platform (systemd on Linux, rc.d on BSDs) in the appropriate directory but does **not** enable or start it.
 
-## 3. Configure Postallow
+## Configure Postallow
 
 Edit the configuration file installed at `SYSCONFDIR/postallow/postallow.conf` (e.g. `/etc/postallow/postallow.conf` or `/usr/local/etc/postallow/postallow.conf`):
 
-1. Set `postfixpath` to the output directory created in step 1
+1. Set `postfixpath` to the output directory created above
 2. Verify `spftoolspath` points to your SPF-Tools installation
 3. Add any custom domains to `allowlist_hosts`
 
@@ -115,7 +132,7 @@ You can always override by passing the path explicitly:
 
     /usr/local/bin/postallow /path/to/config-file
 
-## 4. Configure Postfix
+## Configure Postfix
 
 Point Postfix's `postscreen_access_list` directly at the output directory. There is no need for the files to live under `/etc/postfix/` — Postfix will read them from wherever they are, as long as the `postfix` user can read them. The generated files are world-readable (mode 644).
 
@@ -127,9 +144,7 @@ Point Postfix's `postscreen_access_list` directly at the output directory. There
 
 Adjust the paths above to match the `postfixpath` you configured.
 
-## 5. Enable the init service
-
-`make install` installs the service unit for your platform but does not activate it.
+## Enable the init service
 
 **systemd (most Linux distributions):**
 
