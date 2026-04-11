@@ -1,0 +1,9 @@
+# USER-DEFINED HOSTS FOR POSTALLOW
+# This file is yours — it will not be overwritten by package upgrades.
+#
+# Add domains whose SPF records should be included in the allowlist:
+custom_hosts=""
+#   custom_hosts="mycompany.org example.com"
+#
+# Add domains to block (only used when enable_blocklist=yes in postallow.conf):
+blocklist_hosts=""

@@ -7,7 +7,7 @@
 # Renamed and updated in 2025 by Edmund Lodewijks                 #
 ###################################################################
 
-version="4.2.0"
+version="4.3.0"
 lastupdated="2026-04-11"
 
 # Usage: 1) Place entire /postallow directory in /usr/local/scripts
@@ -94,6 +94,12 @@ if [ ! -s "$allowlist_hosts" ] ; then
 fi
 printf "\nReading options from %s...\n" "$allowlist_hosts"
 . "${allowlist_hosts}"
+
+# Source user custom hosts file
+if [ -n "${custom_hosts_file:-}" ] && [ -f "$custom_hosts_file" ]; then
+	printf "\nReading custom hosts from %s...\n" "$custom_hosts_file"
+	. "${custom_hosts_file}"
+fi
 
 # Remove temp files
 cleanup() {

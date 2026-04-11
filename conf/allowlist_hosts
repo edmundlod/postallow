@@ -1,9 +1,7 @@
-# CUSTOM HOSTS CAN BE ADDED HERE
-
-custom_hosts=""
-
-# A FEW COMMON HOSTS
-# If you think hosts should be added or removed, feel free to send a PR
+# DEFAULT SENDER LISTS
+# This file is managed by the package — do not edit here.
+# Add your own domains to /etc/postallow/custom_hosts instead.
+# If you think hosts should be added or removed, feel free to send a PR.
 
 email_hosts="aol.com fastmail.com google.com gmx.com hotmail.com icloud.com \
 	inbox.com mail.com microsoft.com migadu.com outlook.com \

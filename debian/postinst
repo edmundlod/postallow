@@ -3,6 +3,20 @@ set -e
 
 case "$1" in
     configure)
+        # Migrate custom_hosts from old allowlist_hosts location (pre-4.2)
+        old=/etc/postallow/allowlist_hosts
+        new=/etc/postallow/custom_hosts
+        if [ -f "$old" ] && [ ! -f "$new" ]; then
+            custom=$(sed -n 's/^custom_hosts=//p' "$old")
+            blocklist=$(sed -n 's/^blocklist_hosts=//p' "$old")
+            if [ -n "$custom" ] && [ "$custom" != '""' ]; then
+                printf 'custom_hosts=%s\n' "$custom" >> "$new"
+            fi
+            if [ -n "$blocklist" ] && [ "$blocklist" != '""' ]; then
+                printf 'blocklist_hosts=%s\n' "$blocklist" >> "$new"
+            fi
+        fi
+
         # Create postallow system group and user if they don't exist
         if ! getent group postallow > /dev/null 2>&1; then
             addgroup --system postallow

@@ -89,6 +89,7 @@ install:
 	# --- static data ---
 	install -d -m 755 $(DESTDIR)$(DATADIR)
 	install -m 644 yahoo_static_hosts.txt $(DESTDIR)$(DATADIR)/yahoo_static_hosts.txt
+	install -m 644 conf/allowlist_hosts $(DESTDIR)$(DATADIR)/allowlist_hosts
 
 	# --- sample config (do not overwrite an existing live config) ---
 	install -d -m 755 $(DESTDIR)$(SYSCONFDIR)/postallow
@@ -102,9 +103,9 @@ install:
 			> $(DESTDIR)$(SYSCONFDIR)/postallow/postallow.conf; \
 		chmod 644 $(DESTDIR)$(SYSCONFDIR)/postallow/postallow.conf; \
 	fi
-	if [ ! -f $(DESTDIR)$(SYSCONFDIR)/postallow/allowlist_hosts ]; then \
-		install -m 644 conf/allowlist_hosts \
-			$(DESTDIR)$(SYSCONFDIR)/postallow/allowlist_hosts; \
+	if [ ! -f $(DESTDIR)$(SYSCONFDIR)/postallow/custom_hosts ]; then \
+		install -m 644 conf/custom_hosts \
+			$(DESTDIR)$(SYSCONFDIR)/postallow/custom_hosts; \
 	fi
 
 	# --- man pages ---
@@ -189,6 +190,7 @@ uninstall:
 	rm -f  $(DESTDIR)$(BINDIR)/postallow
 	rm -f  $(DESTDIR)$(BINDIR)/scrape_yahoo
 	rm -f  $(DESTDIR)$(DATADIR)/yahoo_static_hosts.txt
+	rm -f  $(DESTDIR)$(DATADIR)/allowlist_hosts
 	rm -df $(DESTDIR)$(DATADIR)
 	rm -f  $(DESTDIR)$(MANDIR)/man1/postallow.1
 	rm -f  $(DESTDIR)$(MANDIR)/man1/postallow.1.gz

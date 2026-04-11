@@ -1,6 +1,6 @@
 .\" SPDX-License-Identifier: MIT
 .\"
-.TH POSTALLOW.CONF 5 "2026-04-11" "Postallow 4.2.0" "File Formats"
+.TH POSTALLOW.CONF 5 "2026-04-11" "Postallow 4.3.0" "File Formats"
 .
 .SH NAME
 postallow.conf \- configuration file for
@@ -34,11 +34,23 @@ A path supplied on the command line takes precedence over all of them.
 .SH FILE PATH OPTIONS
 .TP
 .BI allowlist_hosts= path
-Path to the file listing the sender domains whose SPF records should be
-queried.
-This file is itself a shell snippet; see
+Path to the package-managed file containing the default sender domain lists.
+Updated on package upgrade; do not edit.
+Default:
+.IR /usr/share/postallow/allowlist_hosts .
+.TP
+.BI custom_hosts_file= path
+Path to the user-managed file for local additions.
+Preserved across upgrades.
+Default:
+.IR /etc/postallow/custom_hosts .
+This file may define
+.B custom_hosts
+and
+.B blocklist_hosts
+(see
 .B HOST LIST FILE
-below for the variables it must define.
+below).
 .TP
 .BI spftoolspath= path
 Directory containing
@@ -136,7 +148,8 @@ custom_hosts="example.com mycompany.org"
 .nf
 # /etc/postallow/postallow.conf
 
-allowlist_hosts=/etc/postallow/allowlist_hosts
+allowlist_hosts=/usr/share/postallow/allowlist_hosts
+custom_hosts_file=/etc/postallow/custom_hosts
 spftoolspath=/usr/bin/spf-tools
 output_dir=/var/lib/postallow
 

@@ -1,4 +1,4 @@
-%{!?pkg_version: %global pkg_version 4.2.0}
+%{!?pkg_version: %global pkg_version 4.3.0}
 
 Name:           postallow
 Version:        %{pkg_version}
@@ -68,9 +68,10 @@ fi
 %{_bindir}/scrape_yahoo
 %dir %{_datadir}/postallow
 %{_datadir}/postallow/yahoo_static_hosts.txt
+%{_datadir}/postallow/allowlist_hosts
 %dir %{_sysconfdir}/postallow
 %config(noreplace) %{_sysconfdir}/postallow/postallow.conf
-%config(noreplace) %{_sysconfdir}/postallow/allowlist_hosts
+%config(noreplace) %{_sysconfdir}/postallow/custom_hosts
 %{_mandir}/man1/postallow.1.gz
 %{_mandir}/man5/postallow.conf.5.gz
 %{_unitdir}/postallow.service
@@ -81,7 +82,9 @@ fi
 %license %{_docdir}/%{name}/LICENSE.md
 
 %changelog
-* Sat Apr 11 2026 Edmund Lodewijks <edmund@proteamail.com> - 4.2.0-1
+* Sat Apr 11 2026 Edmund Lodewijks <edmund@proteamail.com> - 4.3.0-1
+- Split allowlist_hosts: package-managed copy moves to /usr/share/postallow/
+- User additions now live in /etc/postallow/custom_hosts (preserved on upgrade)
 - Rename postfixpath to output_dir; stamp platform default via make install
 - Remove allowlist, blocklist, yahoo_static_hosts from conf (hardcoded defaults)
 - Change include_yahoo default to no
