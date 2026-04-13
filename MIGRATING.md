@@ -1,6 +1,6 @@
-# Upgrading Postallow
+# Migrating to Postallow
 
-## Upgrading from 3.x to 4.0.0
+## From 3.x to 4.0.0
 
 Version 4.0.0 introduces a significant security improvement: Postallow no
 longer runs as root. Instead it runs as a dedicated unprivileged `postallow`
@@ -107,3 +107,49 @@ Run Postallow manually once to confirm everything works:
     su -s /bin/sh postallow -c \
         '/usr/local/bin/postallow /usr/local/etc/postallow/postallow.conf'
 
+## From Postwhite or a pre-4.4 manual Postallow install
+
+### Remove old manual binaries
+
+If you installed Postwhite or Postallow manually to `/usr/local/bin`, those
+binaries will shadow the package-managed ones in `/usr/bin`. The same applies
+to a manual spf-tools installation:
+
+    sudo rm -f /usr/local/bin/postwhite
+    sudo rm -f /usr/local/bin/postallow
+    sudo rm -rf /usr/local/bin/spf-tools
+    sudo rm -rf /usr/local/scripts/spf-tools
+
+Verify with `which postallow` and `which despf.sh` that the package-managed
+versions are found first.
+
+### Output directory
+
+Postwhite and early Postallow versions wrote output directly to `/etc/postfix/`
+as root. Postallow now runs as the unprivileged `postallow` system user and
+writes to a dedicated directory (`/var/lib/postallow/` on Linux,
+`/var/db/postallow/` on FreeBSD/NetBSD, `/var/postallow/` on OpenBSD). The
+files are world-readable (mode 644), so Postfix reads them from there without
+them needing to live under `/etc/postfix/`.
+
+Update `postscreen_access_list` in `/etc/postfix/main.cf`:
+
+    postscreen_access_list = permit_mynetworks,
+            cidr:/var/lib/postallow/postscreen_spf_allowlist.cidr
+
+Reload Postfix, then remove the old file from `/etc/postfix/`.
+
+### Custom hosts
+
+In Postwhite and early Postallow, custom hosts were added directly to
+`allowlist_hosts`, which is overwritten on upgrade. Move them to the
+dedicated `custom_hosts_file` (default `/etc/postallow/custom_hosts`),
+which is preserved across upgrades:
+
+    custom_hosts="example.com mycompany.org"
+
+### Configuration file
+
+Postwhite used `/etc/postwhite.conf`. Create `/etc/postallow/postallow.conf`
+from the installed template (the package does this automatically) and review
+all paths — in particular `spftoolspath` and `output_dir`.

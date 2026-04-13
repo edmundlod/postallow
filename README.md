@@ -42,6 +42,8 @@ Postallow is designed to run as a dedicated unprivileged user (`postallow`). It 
 
 # Installation
 
+> **Coming from Postwhite or an earlier Postallow?** See [MIGRATING.md](MIGRATING.md) for the migration path, including how to clean up old manual installs and where output files have moved.
+
 ## via apt (Debian 13 / trixie)
 
 The apt repository handles all dependencies and user creation automatically:
