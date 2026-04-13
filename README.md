@@ -225,11 +225,9 @@ The ```yahoo_static_hosts.txt``` file can be periodically updated by running the
 To enable blocklisting, set ```enable_blocklist=yes``` and then list blocklisted hosts in ```blocklist_hosts```. Please refer to the blocklisting warning above. Blocklisting is not the primary purpose of Postallow, and most users will never need to turn it on.
 
 ## Invalid hosts
-You can also choose how to handle malformed or invalid CIDR ranges that appear in the mailers' SPF records (which happens more often than it should). The options are:
+Some mailers publish SPF records containing invalid CIDR ranges — network addresses with non-null host bits (e.g. `192.168.1.5/24` instead of `192.168.1.0/24`). Postallow corrects these before aggregation using `normalize.sh` from spf-tools.
 
-* **remove** - the default action, it removes the invalid CIDR range so it doesn't appear in the allowlist.
-* **keep** - this keeps the invalid CIDR range in the allowlist. Postfix will log a warning about ```non-null host address bits```, suggest the closest valid range with a matching prefix length, and harmlessly ignore the rule. Useful only if you want to see which mailers are less than careful about their SPF records.
-* **fix** - this option will change the invalid CIDR to the closest valid range (the same one suggested by Postfix, in fact) and include the corrected CIDR range in the allowlist.
+The default behaviour (`invalid_cidr=fix`) corrects the network address to the proper network — the same result Postfix would derive internally anyway, so no legitimate senders are lost. Set `invalid_cidr=remove` in `postallow.conf` to instead drop the range entirely, which was the original Postwhite and early Postallow behaviour.
 
 Other options in ```postallow.conf``` include changing the filenames for your allowlist & blocklist, Postfix path, and SPF-Tools path.
 

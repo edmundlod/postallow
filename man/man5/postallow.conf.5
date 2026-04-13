@@ -101,6 +101,16 @@ variable in the
 file.
 Default:
 .IR no .
+.TP
+.BR invalid_cidr = fix | remove
+How to handle invalid IPv4 CIDR ranges (non-null host bits) found in SPF records.
+.B fix
+corrects the network address to the proper network prefix — the same result
+Postfix would derive internally from the invalid range.
+.B remove
+drops the range entirely; this was the original Postwhite and early Postallow behaviour.
+Default:
+.IR fix .
 .
 .SH HOST LIST FILE
 The file pointed to by

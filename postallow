@@ -76,6 +76,7 @@ printf "\nReading options from %s...\n" "$config_file"
 
 # Defaults for settings removed from conf in v4.2, and backward compat rename
 output_dir=${output_dir:-${postfixpath:-/var/lib/postallow}}
+invalid_cidr=${invalid_cidr:-fix}
 allowlist=${allowlist:-postscreen_spf_allowlist.cidr}
 blocklist=${blocklist:-postscreen_spf_blocklist.cidr}
 if [ -z "${yahoo_static_hosts:-}" ]; then
@@ -138,61 +139,6 @@ for p in $tmpPrefix; do
 	done
 done
 
-# Create IPv4 normalize function
-ip2int() {
-	for i in 1 2 3 4 5; do
-		eval ip2int_${i}="$(echo "$1" | cut -s -d. -f$i)"
-	done
-	ip2int_valid_range="$((ip2int_1 | ip2int_2 | ip2int_3 | ip2int_4))"
-	[ -z "$ip2int_5" ] && [ -n "$ip2int_1" ] && [ -n "$ip2int_2" ] && [ -n "$ip2int_3" ] && [ -n "$ip2int_4" ] && [ "$ip2int_valid_range" -ge 0 ] && [ "$ip2int_valid_range" -le 255 ] &&
-		printf "%d" "$(((((((ip2int_1 << 8) | ip2int_2) << 8) | ip2int_3) << 8) | ip2int_4))"
-}
-
-int2ip() {
-	int2ip_ui32="$1"; shift
-	int2ip_ip=""
-	[ -n "$int2ip_ui32" ] && [ "$int2ip_ui32" -ge 0 ] && [ "$int2ip_ui32" -le 4294967295 ] && for n in 1 2 3 4; do
-		int2ip_ip="$((int2ip_ui32 & 0xff))${int2ip_ip:+.}$int2ip_ip"
-		int2ip_ui32="$((int2ip_ui32 >> 8))"
-	done
-	printf "%s" "${int2ip_ip}"
-}
-
-network_v4() {
-	network_v4_ia="$(echo "$1" | cut -d/ -f1)"
-	network_v4_netmask="$(echo "$1" | cut -d/ -f2-)"
-	if [ -n "$network_v4_netmask" ] && [ "$network_v4_netmask" -ge 0 ] && [ "$network_v4_netmask" -le 32 ]; then
-		network_v4_addr="$(ip2int $network_v4_ia)"
-		network_v4_mask="$((0xffffffff << (32 - network_v4_netmask)))"
-		if [ "$network_v4_netmask" -eq 32 ]; then
-			printf "%s" $(int2ip $((network_v4_addr & network_v4_mask)))
-		else
-			printf "%s/%s" "$(int2ip $((network_v4_addr & network_v4_mask)))" "$network_v4_netmask"
-		fi
-	fi
-}
-
-network_v6() {
-	printf "%s" "$1"
-}
-
-normalize_ip() {
-	# split by ":"
-	normalize_ip_type="$( echo $1 | cut -s -d\: -f1)"
-	normalize_ip_value="$( echo $1 | cut -s -d\: -f2-)"
-	normalize_ip_IP=""
-	if [ x"${normalize_ip_type}" = x"ip4" ] ; then
-		# check if is a CIDR
-		if expr "x${normalize_ip_value}" : "x.*/[0-9]*" > /dev/null; then
-			normalize_ip_IP="$(network_v4 "${normalize_ip_value}")"
-		else
-			normalize_ip_IP="$(network_v4 "${normalize_ip_value}/32")"
-		fi
-	elif [ x"${normalize_ip_type}" = x"ip6" ]; then
-		normalize_ip_IP="$(network_v6 "${normalize_ip_value}")"
-	fi
-	printf "%s" "$normalize_ip_IP"
-}
 
 # Create host query function
 query_host() {
@@ -217,42 +163,16 @@ show_dots() {
 	printf "\n"
 }
 
-# Fix mode
-fix_invalid_ip() {
-	fix_invalid_ip_iptype="$( echo "$1" | cut -d\: -f1 )"
-	fix_invalid_ip_ip="$(normalize_ip "$1")"
-	if [ -n "$fix_invalid_ip_ip" ]; then
-		if [ x"$fix_invalid_ip_iptype" = x"ip4" ]; then
-			printf "$(eval printf "%s" "\${${2}_line_v4}")" "$fix_invalid_ip_ip"
-		elif [ x"$fix_invalid_ip_iptype" = x"ip6" ] ; then
-			printf "$(eval printf "%s" "\${${2}_line_v6}")" "$fix_invalid_ip_ip"
-		fi
-	fi
-}
-
-# Remove mode
-remove_invalid_ip() {
-	remove_invalid_ip_iptype="$( echo "$1" | cut -d\: -f1 )"
-	remove_invalid_ip_origip="$( echo "$1" | cut -d\: -f2- )"
-	remove_invalid_ip_ip="$(normalize_ip "$1")"
-	if [ x"$remove_invalid_ip_origip" = x"$remove_invalid_ip_ip" ]; then
-		if [ x"$remove_invalid_ip_iptype" = x"ip4" ]; then
-			printf "$(eval printf "%s" "\${${2}_line_v4}")" "$remove_invalid_ip_ip"
-		elif [ x"$remove_invalid_ip_iptype" = x"ip6" ] ; then
-			printf "$(eval printf "%s" "\${${2}_line_v6}")" "$remove_invalid_ip_ip"
-		fi
-	fi
-}
-
-# Keep mode
-keep_invalid_ip() {
-	keep_invalid_ip_iptype="$( echo "$1" | cut -d\: -f1 )"
-	keep_invalid_ip_ip="$( echo "$1" | cut -d\: -f2- )"
-	if [ -n "$keep_invalid_ip_ip" ]; then
-		if [ x"$keep_invalid_ip_iptype" = x"ip4" ]; then
-			printf "$(eval printf "%s" "\${${2}_line_v4}")" "$keep_invalid_ip_ip"
-		elif [ x"$keep_invalid_ip_iptype" = x"ip6" ] ; then
-			printf "$(eval printf "%s" "\${${2}_line_v6}")" "$keep_invalid_ip_ip"
+# Format an already-normalized ip4:/ip6: entry for the output file.
+# Invalid CIDRs are handled upstream by normalize.sh before aggregation.
+format_ip() {
+	format_ip_iptype="$( echo "$1" | cut -d\: -f1 )"
+	format_ip_ip="$( echo "$1" | cut -d\: -f2- )"
+	if [ -n "$format_ip_ip" ]; then
+		if [ x"$format_ip_iptype" = x"ip4" ]; then
+			printf "$(eval printf "%s" "\${${2}_line_v4}")" "$format_ip_ip"
+		elif [ x"$format_ip_iptype" = x"ip6" ] ; then
+			printf "$(eval printf "%s" "\${${2}_line_v6}")" "$format_ip_ip"
 		fi
 	fi
 }
@@ -311,28 +231,33 @@ if [ x"$enable_blocklist" = x"yes" ] ; then
 	done
 fi
 
+case "${invalid_cidr}" in
+	remove) _norm_flag="-i" ;;
+	*)      _norm_flag="" ;;
+esac
+
 printf "\nCIDR and Host summarization...\n"
-# the depends on https://github.com/nabbi/route-summarization with symlink in system PATH
-# invalid hosts are also screened and removed
-sed '/\./s/\/32//g' "${tmp1}" | sort -u | ${aggregateCIDR} --quiet --spf > "${tmp2}" &
+# normalize.sh fixes invalid IPv4 CIDRs (non-null host bits) before aggregation;
+# aggregateCIDR.pl is from nabbi/route-summarization, packaged at edmundlod/route-summarization
+sed '/\./s/\/32//g' "${tmp1}" | "${spftoolspath}"/normalize.sh ${_norm_flag} | sort -u | ${aggregateCIDR} --quiet --spf > "${tmp2}" &
 show_dots "$!"
 
 if [ x"$enable_blocklist" = x"yes" ] ; then
-        cat "${blocktmp1}" | sort -u | ${aggregateCIDR} --quiet --spf > "${blocktmp2}" &
+        cat "${blocktmp1}" | "${spftoolspath}"/normalize.sh ${_norm_flag} | sort -u | ${aggregateCIDR} --quiet --spf > "${blocktmp2}" &
         show_dots "$!"
 fi
 
 #Format the lists
 printf "\nFormatting allowlist IPv4 CIDRs...\n"
 cat "${tmp2}" | while read ip; do
-keep_invalid_ip "$ip" "permit"
+format_ip "$ip" "permit"
 done >> "${tmp3}" &
 show_dots "$!"
 
 if [ x"$enable_blocklist" = x"yes" ] ; then
 	printf "\nFormatting blocklist IPv4 CIDRs...\n"
 	cat "${blocktmp2}" | while read ip; do
-		keep_invalid_ip "$ip" "reject"
+		format_ip "$ip" "reject"
 	done >> "${blocktmp3}" &
 	show_dots "$!"
 fi
