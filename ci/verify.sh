@@ -73,7 +73,9 @@ invalid=$(grep -v '^\(#\|[[:space:]]*$\)' "$CIDR_FILE" \
             # IPv6 with mandatory prefix length
             m{^[0-9a-fA-F:]+:[0-9a-fA-F]*/\d{1,3}$} ||
             # IPv6 ::/0 style (starts with ::)
-            m{^::/\d{1,3}$}
+            m{^::/\d{1,3}$} ||
+            # bare IPv6 host (no prefix — postallow strips /128 like /32 for IPv4)
+            m{^[0-9a-fA-F:]+:[0-9a-fA-F]*$}
         ) { print "$_\n" }
     ')
  
