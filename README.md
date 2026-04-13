@@ -23,7 +23,7 @@ By default, Postallow has blocklisting turned off. Most users will not need to e
 
 # Requirements
 Postallow runs as a shell script (```/bin/sh```) and relies on a script from the <a target="_blank"
-href="https://github.com/spf-tools/spf-tools">SPF-Tools</a> project (**despf.sh**) to help recursively query SPF records. I recommend cloning or copying the entire SPF-Tools repo to a ```/usr/local/scripts/```directory on your system, then confirming the ```spftoolspath``` value in ```postallow.conf```.
+href="https://github.com/spf-tools/spf-tools">SPF-Tools</a> project (**despf.sh**) to help recursively query SPF records. Unless you install via `apt` or `yum`/`dnf` (see below), I recommend cloning or copying the entire SPF-Tools repo to a ```/usr/local/scripts/```directory on your system, then confirming the ```spftoolspath``` value in ```postallow.conf```.
 
 In order to run `postallow` you will need:
 
