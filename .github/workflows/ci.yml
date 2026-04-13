@@ -62,7 +62,7 @@ jobs:
       - name: Install spf-tools
         run: |
           sudo git clone --depth=1 \
-            https://github.com/edmundlod/spf-tools \
+            https://github.com/spf-tools/spf-tools \
             /usr/local/bin/spf-tools
           sudo chmod +x /usr/local/bin/spf-tools/*.sh
  
@@ -154,7 +154,7 @@ jobs:
       - name: Install spf-tools
         run: |
           git clone --depth=1 \
-            https://github.com/edmundlod/spf-tools \
+            https://github.com/spf-tools/spf-tools \
             /usr/local/bin/spf-tools
           chmod +x /usr/local/bin/spf-tools/*.sh
 
@@ -246,7 +246,7 @@ jobs:
       - name: Install spf-tools
         run: |
           git clone --depth=1 \
-            https://github.com/edmundlod/spf-tools \
+            https://github.com/spf-tools/spf-tools \
             /usr/local/bin/spf-tools
           chmod +x /usr/local/bin/spf-tools/*.sh
 
@@ -334,7 +334,7 @@ jobs:
       - name: Install spf-tools
         run: |
           git clone --depth=1 \
-            https://github.com/edmundlod/spf-tools \
+            https://github.com/spf-tools/spf-tools \
             /usr/local/bin/spf-tools
           chmod +x /usr/local/bin/spf-tools/*.sh
 
@@ -440,7 +440,7 @@ jobs:
             
             # --- Install spf-tools ---
             git clone --depth=1 \
-              https://github.com/edmundlod/spf-tools \
+              https://github.com/spf-tools/spf-tools \
               /usr/local/bin/spf-tools
             chmod +x /usr/local/bin/spf-tools/*.sh
 
