@@ -16,6 +16,7 @@
 #   postallow                 (version= and lastupdated=)
 #   man/man1/postallow.1      (.TH date and version)
 #   man/man5/postallow.conf.5 (.TH date and version)
+#   rpm/postallow.spec        (pkg_version default)
 
 set -e
 
@@ -42,5 +43,10 @@ for page in man/man1/postallow.1 man/man5/postallow.conf.5; do
         "${page}" > "${page}.tmp" && mv "${page}.tmp" "${page}"
 done
 
+# rpm spec: update pkg_version default
+sed \
+    -e "s/^%{!?pkg_version: %global pkg_version .*}/%{!?pkg_version: %global pkg_version ${VERSION}}/" \
+    rpm/postallow.spec > rpm/postallow.spec.tmp && mv rpm/postallow.spec.tmp rpm/postallow.spec
+
 printf 'Version set to %s (date %s)\n' "${VERSION}" "${TODAY}"
-printf 'Files updated: postallow, man/man1/postallow.1, man/man5/postallow.conf.5\n'
+printf 'Files updated: postallow, man/man1/postallow.1, man/man5/postallow.conf.5, rpm/postallow.spec\n'
