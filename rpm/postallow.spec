@@ -16,7 +16,7 @@ BuildRequires:  systemd-rpm-macros
 Requires:       postfix
 Requires:       spf-tools
 Requires:       route-summarization
-Requires(pre):  shadow-utils
+Requires(pre):  %{?suse_version:shadow}%{!?suse_version:shadow-utils}
 
 %description
 Postallow generates CIDR allowlists (and optionally blocklists) for Postfix's
