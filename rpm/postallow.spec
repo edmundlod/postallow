@@ -6,7 +6,7 @@ Release:        1%{?dist}
 Summary:        Postfix Postscreen allowlist and blocklist generator from SPF records
 License:        MIT
 URL:            https://github.com/edmundlod/postallow
-Source0:        %{name}-%{version}.tar.gz
+Source0:        https://github.com/edmundlod/postallow/archive/refs/tags/v%{version}/%{name}-%{version}.tar.gz
 BuildArch:      noarch
 
 BuildRequires:  make
