@@ -24,8 +24,14 @@ output_dir=@OUTPUTDIR@
 # Include additional Yahoo/Verizon/AOL outbound IPs scraped from
 # senders.yahooinc.com (on top of those already in Yahoo's SPF records).
 # Run scrape_yahoo periodically to keep the list fresh.
-include_yahoo="no"
+include_yahoo=no
 
 # Use a blocklist as well?
 # List domains to block in the blocklist_hosts section of allowlist_hosts.
 enable_blocklist=no
+
+# How to handle invalid IPv4 CIDR ranges (non-null host bits) in SPF records.
+# fix (default): correct the network address to the proper network — the same
+#   result Postfix would derive internally from the invalid range anyway.
+# remove: drop the range entirely (original Postwhite/Postallow behaviour).
+invalid_cidr=fix
