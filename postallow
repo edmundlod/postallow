@@ -7,7 +7,7 @@
 # Renamed and updated in 2025 by Edmund Lodewijks                 #
 ###################################################################
 
-version="4.4.0"
+version="4.4.1"
 lastupdated="2026-04-13"
 
 # Usage: 1) Place entire /postallow directory in /usr/local/scripts

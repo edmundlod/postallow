@@ -1,4 +1,4 @@
-%{!?pkg_version: %global pkg_version 4.3.0}
+%{!?pkg_version: %global pkg_version 4.4.1}
 
 Name:           postallow
 Version:        %{pkg_version}
@@ -82,6 +82,16 @@ fi
 %license %{_docdir}/%{name}/LICENSE.md
 
 %changelog
+* Mon Apr 13 2026 Edmund Lodewijks <edmund@proteamail.com> - 4.4.1-1
+- Add MIGRATING.md (renamed from UPGRADING.md) with Postwhite and pre-4.4 migration path
+- Link to MIGRATING.md from README
+
+* Mon Apr 13 2026 Edmund Lodewijks <edmund@proteamail.com> - 4.4.0-1
+- Delegate IPv4 CIDR normalization to normalize.sh from spf-tools pre-aggregation
+- Remove internal ip2int/int2ip/network_v4/normalize_ip and fix/remove/keep_invalid_ip functions
+- Add invalid_cidr config option (fix/remove, default: fix)
+- Fix postallow.conf quoting consistency
+
 * Sat Apr 11 2026 Edmund Lodewijks <edmund@proteamail.com> - 4.3.0-1
 - Split allowlist_hosts: package-managed copy moves to /usr/share/postallow/
 - User additions now live in /etc/postallow/custom_hosts (preserved on upgrade)
