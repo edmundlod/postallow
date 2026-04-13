@@ -59,16 +59,14 @@ sudo apt install postallow
 
 Then continue with [Configure Postallow](#configure-postallow).
 
-## via dnf (AlmaLinux 10 / RHEL 10)
+## via dnf (AlmaLinux 10 / RHEL 10 / Fedora)
 
-The RPM repository handles all dependencies and user creation automatically.
-EPEL must be enabled for the `perl-Net-CIDR-Lite` dependency:
+Postallow is available via COPR. EPEL must be enabled on RHEL-based systems
+for the `perl-Net-CIDR-Lite` dependency:
 
 ```bash
-sudo dnf install epel-release
-sudo rpm --import https://edmundlod.github.io/rpm/key.asc
-sudo curl -fsSL https://edmundlod.github.io/rpm/edmundlod.repo \
-  -o /etc/yum.repos.d/edmundlod.repo
+sudo dnf install epel-release   # RHEL/AlmaLinux/Rocky only, skip on Fedora
+sudo dnf copr enable edmundlod/postallow
 sudo dnf install postallow
 ```
 
