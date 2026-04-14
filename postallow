@@ -220,7 +220,11 @@ done
 if [ x"$include_yahoo" = x"yes" ] ; then
 	printf "\nIncluding scraped Yahoo! outbound hosts...\n"
 
-	cat "${yahoo_static_hosts}" >> "${tmp1}"
+	if [ ! -s "${yahoo_static_hosts}" ]; then
+		>&2 printf "WARNING: %s is empty or missing. Run scrape_yahoo to update it.\n" "${yahoo_static_hosts}"
+	else
+		cat "${yahoo_static_hosts}" >> "${tmp1}"
+	fi
 fi
 
 if [ x"$enable_blocklist" = x"yes" ] ; then
