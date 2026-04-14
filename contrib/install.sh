@@ -3,13 +3,13 @@
 # Postallow install helper
 # https://github.com/edmundlod/postallow
 #
-# Creates the postallow system user and output directory for common platforms.
-# It then pulls the dependencies `spf-tools` and `route-summarization` from
-# github.com and installs them with correct permissions in `/usr/local/bin`.
+# Creates the postallow system user and output directory, and installs the two
+# required dependencies (spf-tools scripts and aggregateCIDR.pl) into /usr/local/bin/.
 #
-# This is a convenience script - OS packagers should handle this in their own
-# package lifecycle hooks instead.
+# This is a convenience script for manual installs on common platforms.
+# OS packagers should handle all of this in their own package lifecycle hooks.
 #
+# Requires: git
 # Run as root.
 
 set -e
@@ -75,23 +75,73 @@ else
     echo "Created ${DATADIR} owned by ${POSTALLOW_USER}."
 fi
 
-# Install the dependencies, `spf-tools` and `route-summarization`
-# to `/usr/local/bin`
 
-TMPDIR=$(mktemp -d)
-curl -sL https://github.com/spf-tools/spf-tools/archive/refs/tags/v2.3.tar.gz \
-  | tar -xz --strip-components=1 -C "$TMPDIR" --wildcards 'spf-tools-2.3/*.sh'
-sudo install -m 755 "$TMPDIR"/*.sh /usr/local/bin/
-rm -rf "$TMPDIR"
+# --- Install spf-tools ---
 
-TMPDIR=$(mktemp -d)
-curl -sL https://raw.githubusercontent.com/nabbi/route-summarization/master/aggregateCIDR.pl \
-  -o "$TMPDIR/aggregateCIDR.pl"
-sudo install -m 755 "$TMPDIR/aggregateCIDR.pl" /usr/local/bin/
-rm -rf "$TMPDIR"
+_install_spf=true
+if command -v despf.sh >/dev/null 2>&1; then
+    if [ -t 0 ]; then
+        printf 'spf-tools is already installed. Reinstall to update? [y/N] '
+        read -r _ans
+        case "${_ans}" in
+            [Yy]*) _install_spf=true ;;
+            *) _install_spf=false; echo "Leaving spf-tools as-is." ;;
+        esac
+    else
+        echo "spf-tools already installed (non-interactive run, leaving as-is)."
+        _install_spf=false
+    fi
+fi
+
+if [ "${_install_spf}" = true ]; then
+    if ! command -v git >/dev/null 2>&1; then
+        echo "Error: git is required to install spf-tools. Please install git first." >&2
+        exit 1
+    fi
+    _tmpdir=$(mktemp -d)
+    git clone --depth=1 https://github.com/spf-tools/spf-tools "${_tmpdir}/spf-tools"
+    for _f in "${_tmpdir}/spf-tools"/*.sh; do
+        install -m 755 "${_f}" /usr/local/bin/
+    done
+    rm -rf "${_tmpdir}"
+    echo "Installed spf-tools scripts to /usr/local/bin/."
+fi
+
+# --- Install aggregateCIDR.pl ---
+
+AGGREGATE_BIN="/usr/local/bin/aggregateCIDR.pl"
+
+_install_agg=true
+if [ -f "${AGGREGATE_BIN}" ]; then
+    if [ -t 0 ]; then
+        printf 'aggregateCIDR.pl is already installed. Reinstall to update? [y/N] '
+        read -r _ans
+        case "${_ans}" in
+            [Yy]*) _install_agg=true ;;
+            *) _install_agg=false; echo "Leaving aggregateCIDR.pl as-is." ;;
+        esac
+    else
+        echo "aggregateCIDR.pl already installed (non-interactive run, leaving as-is)."
+        _install_agg=false
+    fi
+fi
+
+if [ "${_install_agg}" = true ]; then
+    if ! command -v git >/dev/null 2>&1; then
+        echo "Error: git is required to install route-summarization. Please install git first." >&2
+        exit 1
+    fi
+    _tmpdir=$(mktemp -d)
+    git clone --depth=1 \
+        https://github.com/edmundlod/route-summarization "${_tmpdir}/route-summarization"
+    install -m 755 "${_tmpdir}/route-summarization/aggregateCIDR.pl" "${AGGREGATE_BIN}"
+    rm -rf "${_tmpdir}"
+    echo "Installed aggregateCIDR.pl to ${AGGREGATE_BIN}."
+fi
 
 echo ""
 echo "Done. Next steps:"
-echo "  1. Set postfixpath=${DATADIR} in postallow.conf"
-echo "  2. Update Postfix main.cf postscreen_access_list to reference ${DATADIR}"
-echo "  3. Install the appropriate init service from contrib/"
+echo "  1. Run: make install"
+echo "  2. Set output_dir=${DATADIR} in postallow.conf"
+echo "  3. Update Postfix main.cf postscreen_access_list to reference ${DATADIR}"
+echo "  4. Enable the appropriate init service from contrib/"

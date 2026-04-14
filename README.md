@@ -9,6 +9,37 @@ A script for generating a Postscreen allowlist (and optionally a blocklist) base
 | AlmaLinux 10 | [![AlmaLinux 10](https://github.com/edmundlod/postallow/actions/workflows/ci.yml/badge.svg?job=almalinux-10)](https://github.com/edmundlod/postallow/actions/workflows/ci.yml) |
 | FreeBSD 15 | [![FreeBSD 15](https://github.com/edmundlod/postallow/actions/workflows/ci.yml/badge.svg?job=freebsd-15)](https://github.com/edmundlod/postallow/actions/workflows/ci.yml) |
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+## Contents
+
+- [Why Postallow?](#why-postallow)
+- [Warning about Blocklisting](#warning-about-blocklisting)
+- [Requirements](#requirements)
+- [Usage](#usage)
+- [Installation](#installation)
+  - [via apt](#via-apt)
+  - [via dnf (AlmaLinux 10 / RHEL 10 / Fedora / OpenSUSE)](#via-dnf-almalinux-10--rhel-10--fedora--opensuse)
+  - [Manual installation](#manual-installation)
+    - [1. Create the postallow user, output directory, and install dependencies](#1-create-the-postallow-user-output-directory-and-install-dependencies)
+    - [2. Install Postallow](#2-install-postallow)
+  - [Configure Postallow](#configure-postallow)
+  - [Configure Postfix](#configure-postfix)
+  - [Enable the init service](#enable-the-init-service)
+  - [Yahoo! Hosts](#yahoo-hosts)
+- [Options](#options)
+  - [Custom Hosts](#custom-hosts)
+  - [Hosts that Don't Publish their Outbound Mailers via SPF Records](#hosts-that-dont-publish-their-outbound-mailers-via-spf-records)
+  - [Yahoo! Hosts](#yahoo-hosts-1)
+  - [Blocklisting](#blocklisting)
+  - [Invalid hosts](#invalid-hosts)
+- [Credits](#credits)
+- [More Info](#more-info)
+- [Suggestions for Additional Mailers](#suggestions-for-additional-mailers)
+- [Disclaimer](#disclaimer)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Why Postallow?
 Postallow uses the published SPF records from domains of known webmailers, social networks, ecommerce providers, and compliant bulk senders to generate a list of outbound mailer IP addresses and CIDR ranges to create a allowlist (and optionally a blocklist) for Postfix's Postscreen.
 
@@ -22,12 +53,8 @@ If all of the allowlist mailers are selected when Postallow runs, the resulting 
 By default, Postallow has blocklisting turned off. Most users will not need to ever turn it on, but it's there if you *really* believe you need it. If you choose to enable it, make sure you understand the implications of blocklisting IP addresses based on their hostnames and associated mailers, and re-run Postallow often via cron to make sure you're not inadvertently blocking legitimate senders.
 
 # Requirements
-Postallow runs as a shell script (```/bin/sh```) and relies on two scripts from the <a target="_blank"
-href="https://github.com/spf-tools/spf-tools">SPF-Tools</a> project and another script by <a target="_blank" href="https://github.com/nabbi/route-summarization/">Nabbi</a> to help recursively query SPF records.
-
-If you use `apt` or `yum`/`dnf` or the AUR to install software, there are 3rd party repo's and packages available (see below).
-
-In all other events, you will need to install `spf-tools`, `route-summarization`, and `postallow` manually. Instructions are further down below.
+Postallow runs as a shell script (```/bin/sh```) and relies on scripts from the <a target="_blank"
+href="https://github.com/spf-tools/spf-tools">SPF-Tools</a> project (**despf.sh**, **normalize.sh**) to help recursively query and normalise SPF records. Unless you install via `apt` or `yum`/`dnf` (see below), use `contrib/install.sh` or the manual steps in the [Manual installation](#manual-installation) section to install them, then confirm the `spftoolspath` value in `postallow.conf`.
 
 In order to run `postallow` you will need:
 
@@ -92,58 +119,48 @@ Then continue with [Configure Postallow](#configure-postallow).
 
 ## Manual installation
 
-### Helper script
+### 1. Create the postallow user, output directory, and install dependencies
 
-A helper script is provided for common platforms:
+A helper script is provided for common platforms (requires **git**):
 
     sudo contrib/install.sh
 
-This creates the `postallow` system user and the output directory with correct ownership, and installs the dependencies.
+This creates the `postallow` system user and the output directory with correct ownership, and installs [spf-tools](https://github.com/spf-tools/spf-tools) and [aggregateCIDR.pl](https://github.com/edmundlod/route-summarization) into `/usr/local/bin/`. OS packagers should handle all of this in their own package lifecycle hooks instead.
 
-OS packagers should handle this in their package lifecycle hooks instead.
+If you prefer to do it manually, or are on an unsupported platform, perform each step in turn:
 
-### Manual installation
+**Create the `postallow` user:**
 
-#### 1. Create the postallow user and output directory
+| Platform | Command |
+|---|---|
+| Linux | `useradd --system --no-create-home --shell /usr/sbin/nologin postallow` |
+| FreeBSD | `pw useradd -n postallow -d /nonexistent -s /usr/sbin/nologin -w no` |
+| OpenBSD | `useradd -r 1..999 -d /nonexistent -s /sbin/nologin postallow` |
+| NetBSD | `useradd -r -d /nonexistent -s /sbin/nologin postallow` |
 
-If you prefer to do it manually, or are on an unsupported platform:
+**Create the output directory** owned by `postallow` with mode 755:
 
-| Platform | User creation | Output directory |
-|---|---|---|
-| Linux | `useradd --system --no-create-home --shell /usr/sbin/nologin postallow` | `/var/lib/postallow` |
-| FreeBSD | `pw useradd -n postallow -d /nonexistent -s /usr/sbin/nologin -w no` | `/var/db/postallow` |
-| OpenBSD | `useradd -r 1..999 -d /nonexistent -s /sbin/nologin postallow` | `/var/postallow` |
-| NetBSD | `useradd -r -d /nonexistent -s /sbin/nologin postallow` | `/var/db/postallow` |
-
-Create the directory owned by `postallow` with mode 755:
+| Platform | Directory |
+|---|---|
+| Linux | `/var/lib/postallow` |
+| FreeBSD / NetBSD | `/var/db/postallow` |
+| OpenBSD | `/var/postallow` |
 
     install -d -o postallow -m 755 /var/lib/postallow   # adjust path for your platform
 
-### 2. Install spf-tools (dependency for Postallow)
+**Install spf-tools:**
 
-We only need the shell scripts from `spf-tools`, nothing else. Download to a temporary directory and install the shell scripts to `/usr/local/bin`.
+    git clone --depth=1 https://github.com/spf-tools/spf-tools /tmp/spf-tools
+    for f in /tmp/spf-tools/*.sh; do install -m 755 "$f" /usr/local/bin/; done
+    rm -rf /tmp/spf-tools
 
-```bash
-TMPDIR=$(mktemp -d)
-curl -sL https://github.com/spf-tools/spf-tools/archive/refs/tags/v2.3.tar.gz \
-  | tar -xz --strip-components=1 -C "$TMPDIR" --wildcards 'spf-tools-2.3/*.sh'
-sudo install -m 755 "$TMPDIR"/*.sh /usr/local/bin/
-rm -rf "$TMPDIR"
-```
+**Install aggregateCIDR.pl:**
 
-### 3. Install route-summarization (dependency for Postallow)
+    git clone --depth=1 https://github.com/edmundlod/route-summarization /tmp/route-summarization
+    install -m 755 /tmp/route-summarization/aggregateCIDR.pl /usr/local/bin/aggregateCIDR.pl
+    rm -rf /tmp/route-summarization
 
-We only need the Perl script from `route-summarization`, nothing else. Download to a temporary directory and install the script to `/usr/local/bin`.
-
-```bash
-TMPDIR=$(mktemp -d)
-curl -sL https://raw.githubusercontent.com/nabbi/route-summarization/master/aggregateCIDR.pl \
-  -o "$TMPDIR/aggregateCIDR.pl"
-sudo install -m 755 "$TMPDIR/aggregateCIDR.pl" /usr/local/bin/
-rm -rf "$TMPDIR"
-```
-
-### 4. Install Postallow
+### 2. Install Postallow
 
     make install
 

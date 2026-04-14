@@ -55,7 +55,14 @@ COMPRESS_MAN ?= auto
 GZIP         ?= gzip
 GZIP_FLAGS   ?= -9
 
-.PHONY: install uninstall help
+.PHONY: install uninstall toc help
+
+# Regenerate the Table of Contents in README.md.
+# Requires Node.js (uses npx to download doctoc on first run).
+# Activate the pre-commit hook to run this automatically:
+#   git config core.hooksPath .githooks
+toc:
+	npx --yes doctoc --github --title '## Contents' README.md
 
 help:
 	@echo "Targets:  install, uninstall, help"
