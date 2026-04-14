@@ -69,6 +69,18 @@ for the `perl-Net-CIDR-Lite` dependency:
 ```bash
 sudo dnf install epel-release   # RHEL/AlmaLinux/Rocky only, skip on Fedora
 sudo dnf copr enable edmundlod/postallow
+```
+
+Optional: Harden this COPR repo by restricting it to only be able to pull required packages from it:
+
+```bash
+echo "includepkgs=postallow spf-tools route-summarization" \                                                                                                                       
+  | sudo tee -a /etc/yum.repos.d/edmundlod-postallow-postallow.repo                                                                                                                
+```
+
+Then install postallow:
+
+```bash
 sudo dnf install postallow
 ```
 
