@@ -4,6 +4,9 @@
 # https://github.com/edmundlod/postallow
 #
 # Creates the postallow system user and output directory for common platforms.
+# It then pulls the dependencies `spf-tools` and `route-summarization` from
+# github.com and installs them with correct permissions in `/usr/local/bin`.
+#
 # This is a convenience script - OS packagers should handle this in their own
 # package lifecycle hooks instead.
 #
@@ -59,6 +62,8 @@ case "${OS}" in
         echo "Unsupported OS: ${OS}"
         echo "Please create a '${POSTALLOW_USER}' system user manually,"
         echo "then create a directory for the output files and set its owner."
+        echo "Next, you will want to install the dependencies. See the README.md"
+        echo "for further instructions."
         exit 1
         ;;
 esac
@@ -69,6 +74,21 @@ else
     install -d -o "${POSTALLOW_USER}" -m 755 "${DATADIR}"
     echo "Created ${DATADIR} owned by ${POSTALLOW_USER}."
 fi
+
+# Install the dependencies, `spf-tools` and `route-summarization`
+# to `/usr/local/bin`
+
+TMPDIR=$(mktemp -d)
+curl -sL https://github.com/spf-tools/spf-tools/archive/refs/tags/v2.3.tar.gz \
+  | tar -xz --strip-components=1 -C "$TMPDIR" --wildcards 'spf-tools-2.3/*.sh'
+sudo install -m 755 "$TMPDIR"/*.sh /usr/local/bin/
+rm -rf "$TMPDIR"
+
+TMPDIR=$(mktemp -d)
+curl -sL https://raw.githubusercontent.com/nabbi/route-summarization/master/aggregateCIDR.pl \
+  -o "$TMPDIR/aggregateCIDR.pl"
+sudo install -m 755 "$TMPDIR/aggregateCIDR.pl" /usr/local/bin/
+rm -rf "$TMPDIR"
 
 echo ""
 echo "Done. Next steps:"
