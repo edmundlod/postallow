@@ -59,7 +59,7 @@ href="https://github.com/spf-tools/spf-tools">SPF-Tools</a> project (**despf.sh*
 In order to run `postallow` you will need:
 
 * A shell
-* Perl
+* Perl 5+
 * [spf-tools](https://github.com/spf-tools/spf-tools)
 * [route-summarization](https://github.com/edmundlod/route-summarization)
 
@@ -119,9 +119,14 @@ Then continue with [Configure Postallow](#configure-postallow).
 
 ## Manual installation
 
+Install requirements:
+
+* `git` — to fetch spf-tools and route-summarization
+* `make` — to run `make install`
+
 ### 1. Create the postallow user, output directory, and install dependencies
 
-A helper script is provided for common platforms (requires **git**):
+A helper script is provided for common platforms:
 
     sudo contrib/install.sh
 
