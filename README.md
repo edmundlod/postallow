@@ -22,8 +22,12 @@ If all of the allowlist mailers are selected when Postallow runs, the resulting 
 By default, Postallow has blocklisting turned off. Most users will not need to ever turn it on, but it's there if you *really* believe you need it. If you choose to enable it, make sure you understand the implications of blocklisting IP addresses based on their hostnames and associated mailers, and re-run Postallow often via cron to make sure you're not inadvertently blocking legitimate senders.
 
 # Requirements
-Postallow runs as a shell script (```/bin/sh```) and relies on a script from the <a target="_blank"
-href="https://github.com/spf-tools/spf-tools">SPF-Tools</a> project (**despf.sh**) to help recursively query SPF records. Unless you install via `apt` or `yum`/`dnf` (see below), I recommend cloning or copying the entire SPF-Tools repo to a ```/usr/local/scripts/```directory on your system, then confirming the ```spftoolspath``` value in ```postallow.conf```.
+Postallow runs as a shell script (```/bin/sh```) and relies on two scripts from the <a target="_blank"
+href="https://github.com/spf-tools/spf-tools">SPF-Tools</a> project and another script by <a target="_blank" href="https://github.com/nabbi/route-summarization/">Nabbi</a> to help recursively query SPF records.
+
+If you use `apt` or `yum`/`dnf` or the AUR to install software, there are 3rd party repo's and packages available (see below).
+
+In all other events, you will need to install `spf-tools`, `route-summarization`, and `postallow` manually. Instructions are further down below.
 
 In order to run `postallow` you will need:
 
@@ -44,7 +48,7 @@ Postallow is designed to run as a dedicated unprivileged user (`postallow`). It 
 
 > **Coming from Postwhite or an earlier Postallow?** See [MIGRATING.md](MIGRATING.md) for the migration path, including how to clean up old manual installs and where output files have moved.
 
-## via apt (Debian 13 / trixie)
+## via apt
 
 The apt repository handles all dependencies and user creation automatically:
 
@@ -61,7 +65,7 @@ sudo apt install postallow
 
 Then continue with [Configure Postallow](#configure-postallow).
 
-## via dnf (AlmaLinux 10 / RHEL 10 / Fedora)
+## via dnf (AlmaLinux 10 / RHEL 10 / Fedora / OpenSUSE)
 
 Postallow is available via COPR. EPEL must be enabled on RHEL-based systems
 for the `perl-Net-CIDR-Lite` dependency:
@@ -88,13 +92,19 @@ Then continue with [Configure Postallow](#configure-postallow).
 
 ## Manual installation
 
-### 1. Create the postallow user and output directory
+### Helper script
 
 A helper script is provided for common platforms:
 
     sudo contrib/install.sh
 
-This creates the `postallow` system user and the output directory with correct ownership. OS packagers should handle this in their package lifecycle hooks instead.
+This creates the `postallow` system user and the output directory with correct ownership, and installs the dependencies.
+
+OS packagers should handle this in their package lifecycle hooks instead.
+
+### Manual installation
+
+#### 1. Create the postallow user and output directory
 
 If you prefer to do it manually, or are on an unsupported platform:
 
@@ -109,7 +119,31 @@ Create the directory owned by `postallow` with mode 755:
 
     install -d -o postallow -m 755 /var/lib/postallow   # adjust path for your platform
 
-### 2. Install Postallow
+### 2. Install spf-tools (dependency for Postallow)
+
+We only need the shell scripts from `spf-tools`, nothing else. Download to a temporary directory and install the shell scripts to `/usr/local/bin`.
+
+```bash
+TMPDIR=$(mktemp -d)
+curl -sL https://github.com/spf-tools/spf-tools/archive/refs/tags/v2.3.tar.gz \
+  | tar -xz --strip-components=1 -C "$TMPDIR" --wildcards 'spf-tools-2.3/*.sh'
+sudo install -m 755 "$TMPDIR"/*.sh /usr/local/bin/
+rm -rf "$TMPDIR"
+```
+
+### 3. Install route-summarization (dependency for Postallow)
+
+We only need the Perl script from `route-summarization`, nothing else. Download to a temporary directory and install the script to `/usr/local/bin`.
+
+```bash
+TMPDIR=$(mktemp -d)
+curl -sL https://raw.githubusercontent.com/nabbi/route-summarization/master/aggregateCIDR.pl \
+  -o "$TMPDIR/aggregateCIDR.pl"
+sudo install -m 755 "$TMPDIR/aggregateCIDR.pl" /usr/local/bin/
+rm -rf "$TMPDIR"
+```
+
+### 4. Install Postallow
 
     make install
 
@@ -193,7 +227,7 @@ Contributions of rc.d scripts for OpenBSD, NetBSD, and other platforms are welco
 
 ## Yahoo! Hosts
 
-It is still possible to update the list of known Yahoo! outbound IP addresses from their website weekly. Run the `scrape_yahoo` script periodically via cron (no more than weekly):
+Yahoo! publishes its (and Verizon's and AOL's) outbound IP addresses on their website. Run the `scrape_yahoo` script periodically via cron, a SystemD timer, or any other way (no more than weekly):
 
     @weekly postallow /usr/local/scripts/postallow/scrape_yahoo > /dev/null 2>&1
 
@@ -222,18 +256,18 @@ Because Postallow relies on published SPF records to build its allowlist, mailer
 
 For smaller mailhosts without SPF-published mailer lists, the included `query_host_ovh` file is a working example of a script that queries a range of hostnames for a specific mailer (`mail-out.ovh.net` in the included example), collects valid IP addresses, and includes them in a custom allowlist. The new custom allowlist may then be included in as an additional entry in your Postfix's `postscreen_access_list` parameter (see **Usage** above).
 
-To create additional customised query scripts for mailers that don't publish outbound IPs via SPF, copy the example `query_host_ovh` file to a new unique filename, edit the script's mailhost and numerical range values as required, set a unique output file (`/etc/postfix/postscreen_*_allowlist.cidr`), include the output file in Postfix's `postscreen_access_list` parameter, then configure cron to run the new query script periodically.
+To create additional customised query scripts for mailers that don't publish outbound IPs via SPF, copy the example `query_host_ovh` file to a new unique filename, edit the script's mailhost and numerical range values as required, set a unique output file (`/var/lib/postallow/postscreen_*_allowlist.cidr`), include the output file in Postfix's `postscreen_access_list` parameter, then configure cron or SystemD to run the new query script periodically.
 
 Depending on the size of the range you wish to query, this script could take a long time to complete. I recommend testing on a small fraction of the mailhost's range before pushing the script to a production environment.
 
 ## Yahoo! Hosts
 The netblocks for Yahoo! are only to be found on their own nameservers, and manual checking of the querying mechanism is required every now and then.
 
-Yahoo also publishes a list of outbound IP addresses [on its website](https://senders.yahooinc.com/outbound-mail-servers/). However, that list does not correspond 100% to the IP addresses obtained from their SPF records via their own nameservers (it would appear that the list on their website shows IP addresses for Yahoo!, Verizon, and AOL). Therefore, Postallow offers both a dynamic list of Yahoo mailers, built from the records obtained from their Nameservers, as well as the option to scrape Yahoo's website and add those IP addresses as well.
+Yahoo also publishes a list of outbound IP addresses [on its website](https://senders.yahooinc.com/outbound-mail-servers/). However, that list does not correspond 100% to the IP addresses obtained from their SPF records via their own nameservers. Therefore, Postallow offers both a dynamic list of Yahoo mailers, built from the records obtained from their Nameservers, as well as the option to scrape Yahoo's website and add those IP addresses as well. This is the default option.
 
 A list of Yahoo! outbound IP addresses, based on the linked knowledgebase article and formatted for Postallow, is included as ```yahoo_static_hosts.txt```. By default, the contents of this file are added to the final allowlist. To disable these particular Yahoo! IPs from being included in your allowlist, set ```include_yahoo="no"``` in your `postallow.conf`.
 
-The ```yahoo_static_hosts.txt``` file can be periodically updated by running the ```scrape_yahoo``` script, which requires either **Wget** or **cURL** (included on most systems). The ```scrape_yahoo``` script reads the Postallow config file for the location to write the updated list of Yahoo! oubound IP addresses. Run the ```scrape_yahoo``` script periodically via cron (I recommend no more than weekly) to automatically update the list of Yahoo! IPs used by Postallow.
+The ```yahoo_static_hosts.txt``` file can be periodically updated by running the ```scrape_yahoo``` script, which requires either **Wget** or **cURL** (included on most systems). The ```scrape_yahoo``` script reads the Postallow config file for the location to write the updated list of Yahoo! oubound IP addresses. Run the ```scrape_yahoo``` script periodically via cronor SystemD  (I recommend no more than weekly) to automatically update the list of Yahoo! IPs used by Postallow.
 
 ## Blocklisting
 To enable blocklisting, set ```enable_blocklist=yes``` and then list blocklisted hosts in ```blocklist_hosts```. Please refer to the blocklisting warning above. Blocklisting is not the primary purpose of Postallow, and most users will never need to turn it on.
