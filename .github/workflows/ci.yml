@@ -13,18 +13,17 @@ on:
 # ---------------------------------------------------------------------------
 # Every job follows the same sequence:
 #   1. Install postfix, DNS tools, Perl + CIDR modules, and git.
-#   2. Clone spf-tools (provides despf.sh for SPF record expansion).
-#   3. Clone route-summarization (provides aggregateCIDR.pl for CIDR aggregation).
-#   4. Create the postallow system user and output directory (via contrib/install.sh).
-#   5. Install the postallow script + config + host list + static Yahoo data.
-#   6. Write a minimal postallow.conf pointing at the correct paths.
-#   7. Configure postfix (loopback-only listener; file-based logging for containers).
-#   8. Start postfix.
-#   9. Run postallow AS THE postallow USER — this is the unprivileged half of the
+#   2. Run contrib/install.sh as root — creates the postallow user and output
+#      directory, and installs spf-tools + aggregateCIDR.pl.
+#   3. Install the postallow script + config + host list + static Yahoo data.
+#   4. Write a minimal postallow.conf pointing at the correct paths.
+#   5. Configure postfix (loopback-only listener; file-based logging for containers).
+#   6. Start postfix.
+#   7. Run postallow AS THE postallow USER — this is the unprivileged half of the
 #      privilege-separated design.  It writes the CIDR file but cannot touch postfix.
-#  10. Reload postfix AS ROOT — this is the privileged half (systemd ExecStartPost=+
+#   8. Reload postfix AS ROOT — this is the privileged half (systemd ExecStartPost=+
 #      in production; explicit root step in CI).
-#  11. Run ci/verify.sh to assert the CIDR file is present, contains no duplicate
+#   9. Run ci/verify.sh to assert the CIDR file is present, contains no duplicate
 #      entries, and contains only valid IP/CIDR notation throughout.
 #
 # DNS queries are REAL (no mocking).  The script has set -e, so a transient DNS
@@ -59,23 +58,7 @@ jobs:
             perl libnet-cidr-lite-perl libnetaddr-ip-perl \
             git
  
-      - name: Install spf-tools
-        run: |
-          sudo git clone --depth=1 \
-            https://github.com/spf-tools/spf-tools \
-            /usr/local/bin/spf-tools
-          sudo chmod +x /usr/local/bin/spf-tools/*.sh
- 
-      - name: Install aggregateCIDR.pl
-        run: |
-          sudo git clone --depth=1 \
-            https://github.com/edmundlod/route-summarization \
-            /opt/route-summarization
-          sudo install -m 755 \
-            /opt/route-summarization/aggregateCIDR.pl \
-            /usr/local/bin/aggregateCIDR.pl
- 
-      - name: Create postallow user and data directory
+      - name: Set up postallow user, data directory, and dependencies
         run: sudo sh contrib/install.sh
  
       - name: Install postallow script, host list, and static data
@@ -91,7 +74,7 @@ jobs:
         run: |
           cat > /tmp/postallow.conf <<'EOF'
           allowlist_hosts=/etc/postallow/allowlist_hosts
-          spftoolspath=/usr/local/bin/spf-tools
+          spftoolspath=/usr/local/bin
           postfixpath=/var/lib/postallow
           allowlist=postscreen_spf_allowlist.cidr
           blocklist=postscreen_spf_blocklist.cidr
@@ -151,23 +134,7 @@ jobs:
             perl libnet-cidr-lite-perl libnetaddr-ip-perl \
             git
 
-      - name: Install spf-tools
-        run: |
-          git clone --depth=1 \
-            https://github.com/spf-tools/spf-tools \
-            /usr/local/bin/spf-tools
-          chmod +x /usr/local/bin/spf-tools/*.sh
-
-      - name: Install aggregateCIDR.pl
-        run: |
-          git clone --depth=1 \
-            https://github.com/edmundlod/route-summarization \
-            /opt/route-summarization
-          install -m 755 \
-            /opt/route-summarization/aggregateCIDR.pl \
-            /usr/local/bin/aggregateCIDR.pl
-
-      - name: Create postallow user and data directory
+      - name: Set up postallow user, data directory, and dependencies
         run: sh contrib/install.sh
 
       - name: Install postallow script, host list, and static data
@@ -183,7 +150,7 @@ jobs:
         run: |
           cat > /etc/postallow/postallow.conf <<'EOF'
           allowlist_hosts=/etc/postallow/allowlist_hosts
-          spftoolspath=/usr/local/bin/spf-tools
+          spftoolspath=/usr/local/bin
           postfixpath=/var/lib/postallow
           allowlist=postscreen_spf_allowlist.cidr
           blocklist=postscreen_spf_blocklist.cidr
@@ -243,23 +210,7 @@ jobs:
             git \
             procps-ng
 
-      - name: Install spf-tools
-        run: |
-          git clone --depth=1 \
-            https://github.com/spf-tools/spf-tools \
-            /usr/local/bin/spf-tools
-          chmod +x /usr/local/bin/spf-tools/*.sh
-
-      - name: Install aggregateCIDR.pl
-        run: |
-          git clone --depth=1 \
-            https://github.com/edmundlod/route-summarization \
-            /opt/route-summarization
-          install -m 755 \
-            /opt/route-summarization/aggregateCIDR.pl \
-            /usr/local/bin/aggregateCIDR.pl
-
-      - name: Create postallow user and data directory
+      - name: Set up postallow user, data directory, and dependencies
         run: sh contrib/install.sh
 
       - name: Install postallow script, host list, and static data
@@ -275,7 +226,7 @@ jobs:
         run: |
           cat > /etc/postallow/postallow.conf <<'EOF'
           allowlist_hosts=/etc/postallow/allowlist_hosts
-          spftoolspath=/usr/local/bin/spf-tools
+          spftoolspath=/usr/local/bin
           postfixpath=/var/lib/postallow
           allowlist=postscreen_spf_allowlist.cidr
           blocklist=postscreen_spf_blocklist.cidr
@@ -331,23 +282,7 @@ jobs:
             git \
             procps-ng
 
-      - name: Install spf-tools
-        run: |
-          git clone --depth=1 \
-            https://github.com/spf-tools/spf-tools \
-            /usr/local/bin/spf-tools
-          chmod +x /usr/local/bin/spf-tools/*.sh
-
-      - name: Install aggregateCIDR.pl
-        run: |
-          git clone --depth=1 \
-            https://github.com/edmundlod/route-summarization \
-            /opt/route-summarization
-          install -m 755 \
-            /opt/route-summarization/aggregateCIDR.pl \
-            /usr/local/bin/aggregateCIDR.pl
-
-      - name: Create postallow user and data directory
+      - name: Set up postallow user, data directory, and dependencies
         run: sh contrib/install.sh
 
       - name: Install postallow script, host list, and static data
@@ -363,7 +298,7 @@ jobs:
         run: |
           cat > /etc/postallow/postallow.conf <<'EOF'
           allowlist_hosts=/etc/postallow/allowlist_hosts
-          spftoolspath=/usr/local/bin/spf-tools
+          spftoolspath=/usr/local/bin
           postfixpath=/var/lib/postallow
           allowlist=postscreen_spf_allowlist.cidr
           blocklist=postscreen_spf_blocklist.cidr
@@ -438,22 +373,9 @@ jobs:
           run: |
             set -e
             
-            # --- Install spf-tools ---
-            git clone --depth=1 \
-              https://github.com/spf-tools/spf-tools \
-              /usr/local/bin/spf-tools
-            chmod +x /usr/local/bin/spf-tools/*.sh
-
-            # --- Install aggregateCIDR.pl ---
-            git clone --depth=1 \
-              https://github.com/edmundlod/route-summarization \
-              /opt/route-summarization
-            install -m 755 \
-              /opt/route-summarization/aggregateCIDR.pl \
-              /usr/local/bin/aggregateCIDR.pl
-
-            # --- Create postallow user and data directory ---
+            # --- Set up postallow user, data directory, and dependencies ---
             # contrib/install.sh detects FreeBSD via uname and uses pw(8).
+            # It also installs spf-tools and aggregateCIDR.pl.
             sh contrib/install.sh
 
             # --- Install postallow script, host list, and static data ---
@@ -468,7 +390,7 @@ jobs:
             # --- Write postallow.conf (FreeBSD paths) ---
             cat > /usr/local/etc/postallow/postallow.conf <<'CONF'
             allowlist_hosts=/usr/local/etc/postallow/allowlist_hosts
-            spftoolspath=/usr/local/bin/spf-tools
+            spftoolspath=/usr/local/bin
             postfixpath=/var/db/postallow
             allowlist=postscreen_spf_allowlist.cidr
             blocklist=postscreen_spf_blocklist.cidr

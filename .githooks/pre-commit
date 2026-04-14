@@ -1,0 +1,16 @@
+#!/bin/sh
+#
+# pre-commit hook: keep the README.md Table of Contents up to date.
+#
+# Activate with:   git config core.hooksPath .githooks
+#
+# Requires Node.js (npx downloads doctoc on first run).
+# If npx is not available the hook exits 0 (non-blocking) with a warning.
+
+if ! command -v npx >/dev/null 2>&1; then
+    echo "pre-commit: npx not found, skipping ToC update (install Node.js to enable)" >&2
+    exit 0
+fi
+
+make toc
+git add README.md

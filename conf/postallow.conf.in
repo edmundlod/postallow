@@ -10,7 +10,7 @@ allowlist_hosts=@DATADIR@/allowlist_hosts
 custom_hosts_file=@SYSCONFDIR@/postallow/custom_hosts
 
 # Location of spf-tools
-spftoolspath=@BINDIR@/spf-tools
+spftoolspath=/usr/local/bin
 
 # Directory where the generated CIDR files are written.
 # Postallow writes these files as the postallow user (world-readable, mode 644).
