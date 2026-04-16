@@ -138,16 +138,18 @@ install:
 	# installed as documentation rather than an executable tool.
 	install -m 644 scripts/query_mailer_ovh $(DESTDIR)$(DOCDIR)/query_mailer_ovh.example
 
-	# --- AppArmor profile (Linux only) ---
-	@case "$$(uname -s)" in \
-	Linux) \
-		echo "# apparmor"; \
-		install -d -m 755 $(DESTDIR)/etc/apparmor.d; \
-		install -m 644 contrib/apparmor/usr.bin.postallow \
-			$(DESTDIR)/etc/apparmor.d/usr.bin.postallow; \
-		echo "  installed: /etc/apparmor.d/usr.bin.postallow"; \
-		;; \
-	esac
+    # --- AppArmor profile (Linux only, if AppArmor is available) ---
+    @case "$$(uname -s)" in \
+    Linux) \
+            if command -v aa-status >/dev/null 2>&1 || [ -d /etc/apparmor.d ]; then \
+                    echo "# apparmor"; \
+                    install -d -m 755 $(DESTDIR)/etc/apparmor.d; \
+                    install -m 644 contrib/apparmor/usr.bin.postallow \
+                            $(DESTDIR)/etc/apparmor.d/usr.bin.postallow; \
+                    echo "  installed: /etc/apparmor.d/usr.bin.postallow"; \
+            fi \
+            ;; \
+    esac
 
 	# --- init service units – platform detected at install time ---
 	@case "$$(uname -s)" in \
