@@ -42,7 +42,7 @@ jobs:
               dnf install -y rpm-build rpmdevtools make systemd-rpm-macros
               rpmdev-setuptree
               cp dist/*.tar.gz ~/rpmbuild/SOURCES/
-              rpmbuild -bb --define "pkg_version $VERSION" rpm/postallow.spec
+              rpmbuild -bb --define "pkg_version $VERSION" contrib/rpm/postallow.spec
               find ~/rpmbuild/RPMS -name "*.rpm" -exec cp {} /src/dist/ \;
             '
 
