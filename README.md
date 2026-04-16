@@ -117,6 +117,10 @@ sudo dnf install postallow
 
 Then continue with [Configure Postallow](#configure-postallow).
 
+## Archlinux c.s.
+
+A package is available in the `AUR`. The `PKGBUILD`, `sysusers`, and `tmpfiles` files are also available in this repo.
+
 ## Manual installation
 
 Install requirements:
