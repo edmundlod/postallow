@@ -40,3 +40,14 @@ jobs:
         with:
           files: dist/*.deb
 
+      - name: Dispatch to apt repository
+        run: |
+          for deb in dist/*.deb; do
+            pkg=$(basename "$deb")
+            url="https://github.com/edmundlod/postallow/releases/download/${{ github.ref_name }}/${pkg}"
+            curl -s -X POST \
+              -H "Authorization: Bearer ${{ secrets.REPO_DISPATCH_APT_AND_RPM }}" \
+              -H "Accept: application/vnd.github+json" \
+              https://api.github.com/repos/edmundlod/apt/dispatches \
+              -d "{\"event_type\":\"package-built\",\"client_payload\":{\"deb_url\":\"${url}\",\"package\":\"${pkg}\"}}"
+          done
