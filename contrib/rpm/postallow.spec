@@ -1,4 +1,4 @@
-%{!?pkg_version: %global pkg_version 4.5.0}
+%{!?pkg_version: %global pkg_version 4.5.1}
 
 Name:           postallow
 Version:        %{pkg_version}
@@ -82,6 +82,12 @@ fi
 %license %{_docdir}/%{name}/LICENSE.md
 
 %changelog
+* Wed May 27 2026 Edmund Lodewijks <edmund@proteamail.com> - 4.5.1-1
+- Fix format_ip() not found when using --quick-add (function defined after early-exit block)
+- Fix misleading echo hint in --quick-add output; replaced with plain file path
+- Fix missing codename in apt dispatch payload (reprepro was failing silently)
+- Fix Makefile AppArmor recipe block tab indentation
+
 * Wed May 27 2026 Edmund Lodewijks <edmund@proteamail.com> - 4.5.0-1
 - Add --quick-add (-q) option to temporarily allow a single domain immediately
 - Append resolved IPs to the live allowlist and reload Postfix in one step

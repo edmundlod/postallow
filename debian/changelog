@@ -1,3 +1,15 @@
+postallow (4.5.1-1) trixie; urgency=low
+
+  * Fix --quick-add: format_ip() was defined after the early-exit block,
+    causing 'format_ip: not found' at runtime.
+  * Fix --quick-add: replace misleading echo hint with plain instruction
+    to edit the custom_hosts file directly.
+  * Fix build: correct tab indentation in Makefile AppArmor recipe block.
+  * Fix CI: pass codename in apt dispatch payload so reprepro can find
+    the target distribution.
+
+ -- Edmund Lodewijks <edmund@proteamail.com>  Wed, 27 May 2026 00:00:00 +0000
+
 postallow (4.5.0-1) trixie; urgency=low
 
   * Add --quick-add (-q) option to temporarily allow a single domain

@@ -5,6 +5,19 @@ Entries are newest-first. Dates are YYYY-MM-DD.
 
 ---
 
+## 4.5.1 — 2026-05-27 — Edmund Lodewijks
+
+- Fix `--quick-add`: `format_ip()` was defined after the early-exit block,
+  causing `format_ip: not found` at runtime.
+- Fix `--quick-add`: replace misleading `echo` hint (which would append a
+  second `custom_hosts=` assignment) with a plain instruction to edit the
+  `custom_hosts` variable in the custom hosts file directly.
+- Fix Makefile AppArmor recipe block indentation (spaces → tabs); was causing
+  `missing separator` errors in deb and rpm build workflows.
+- Fix CI: pass `codename` in the apt dispatch payload; `reprepro` was failing
+  with `Cannot find definition of distribution ''` and the job was silently
+  passing due to `curl -s`.
+
 ## 4.5.0 — 2026-05-27 — Edmund Lodewijks
 
 - Add `--quick-add` / `-q` option: resolve a single domain's SPF records,
