@@ -1,3 +1,28 @@
+postallow (4.5.0-1) trixie; urgency=low
+
+  * Add --quick-add (-q) option to temporarily allow a single domain
+    immediately: resolves its SPF IPs, appends them to the live allowlist,
+    and reloads Postfix in one step.
+  * Prints a reminder (with a ready-to-paste command) to add the domain
+    permanently to custom_hosts.
+
+ -- Edmund Lodewijks <edmund@proteamail.com>  Wed, 27 May 2026 00:00:00 +0000
+
+postallow (4.4.1-1) trixie; urgency=low
+
+  * Add MIGRATING.md with Postwhite and pre-4.4 migration path.
+
+ -- Edmund Lodewijks <edmund@proteamail.com>  Mon, 13 Apr 2026 00:00:00 +0000
+
+postallow (4.4.0-1) trixie; urgency=low
+
+  * Delegate IPv4 CIDR normalization to normalize.sh from spf-tools,
+    run before aggregation.
+  * Remove internal ip2int/int2ip/network_v4/normalize_ip functions.
+  * Add invalid_cidr config option (fix/remove, default: fix).
+
+ -- Edmund Lodewijks <edmund@proteamail.com>  Mon, 13 Apr 2026 00:00:00 +0000
+
 postallow (4.3.0-2) trixie; urgency=low
 
   * Remove postinst migration script; add upgrade note to changelog instead.

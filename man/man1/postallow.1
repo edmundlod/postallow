@@ -1,12 +1,17 @@
 .\" SPDX-License-Identifier: MIT
 .\"
-.TH POSTALLOW 1 "2026-04-13" "Postallow 4.4.1" "User Commands"
+.TH POSTALLOW 1 "2026-05-27" "Postallow 4.5.0" "User Commands"
 .
 .SH NAME
 postallow \- generate a Postscreen allowlist (and optionally blocklist) from SPF records
 .
 .SH SYNOPSIS
 .B postallow
+.RI [ config-file ]
+.PP
+.B postallow
+.BR \-q | \-\-quick\-add
+.I domain
 .RI [ config-file ]
 .
 .SH DESCRIPTION
@@ -44,6 +49,44 @@ Path to an alternative configuration file.
 Overrides the default search path (see
 .B FILES
 below).
+.TP
+.BR \-q ", " \-\-quick\-add " " \fIdomain\fR
+Resolve the SPF record for
+.I domain
+and
+.B append
+the resulting permit rules to the existing allowlist file, then reload Postfix.
+This is intended as a quick, one-off unblock while waiting for a time-sensitive
+e-mail (such as an OTP or account-confirmation message).
+.PP
+.RS
+.B WARNING:
+.B \-\-quick\-add
+triggers a
+.B postfix reload
+so that the new rules take effect immediately.
+While
+.BR reload (8)
+is non-disruptive (it does not drop established connections), it does
+apply configuration changes mid-flight.
+The command must be run as
+.B root
+(or via
+.BR sudo )
+for the reload to succeed; if it cannot reload Postfix it prints the manual
+command and exits cleanly.
+.PP
+The appended entries are
+.BR temporary .
+The next time
+.B postallow
+performs a full run it regenerates the allowlist from scratch, removing the
+quick-added rules.
+.B postallow
+prints a ready-to-run
+.I echo
+command to add the domain permanently to your custom hosts file.
+.RE
 .
 .SH FILES
 .B postallow
@@ -102,6 +145,20 @@ Run with an explicit configuration file:
 .PP
 .RS
 .B postallow /etc/postallow/postallow.conf
+.RE
+.PP
+Temporarily allow mail from
+.I example.com
+while waiting for an OTP e-mail:
+.PP
+.RS
+.B postallow \-\-quick\-add example.com
+.RE
+.PP
+Same, using the short form:
+.PP
+.RS
+.B postallow \-q example.com
 .RE
 .
 .SH SEE ALSO

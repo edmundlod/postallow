@@ -1,4 +1,4 @@
-%{!?pkg_version: %global pkg_version 4.4.1}
+%{!?pkg_version: %global pkg_version 4.5.0}
 
 Name:           postallow
 Version:        %{pkg_version}
@@ -82,6 +82,11 @@ fi
 %license %{_docdir}/%{name}/LICENSE.md
 
 %changelog
+* Wed May 27 2026 Edmund Lodewijks <edmund@proteamail.com> - 4.5.0-1
+- Add --quick-add (-q) option to temporarily allow a single domain immediately
+- Append resolved IPs to the live allowlist and reload Postfix in one step
+- Prints reminder to add the domain permanently to custom_hosts
+
 * Mon Apr 13 2026 Edmund Lodewijks <edmund@proteamail.com> - 4.4.1-1
 - Add MIGRATING.md (renamed from UPGRADING.md) with Postwhite and pre-4.4 migration path
 - Link to MIGRATING.md from README

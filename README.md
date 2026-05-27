@@ -17,6 +17,7 @@ A script for generating a Postscreen allowlist (and optionally a blocklist) base
 - [Warning about Blocklisting](#warning-about-blocklisting)
 - [Requirements](#requirements)
 - [Usage](#usage)
+  - [Quick-add a domain temporarily](#quick-add-a-domain-temporarily)
 - [Installation](#installation)
   - [via apt](#via-apt)
   - [via dnf (AlmaLinux 10 / RHEL 10 / Fedora / OpenSUSE)](#via-dnf-almalinux-10--rhel-10--fedora--opensuse)
@@ -70,6 +71,22 @@ Postallow also assumes that you have **Postfix** and the appropriate **bind-util
 # Usage
 
 Postallow is designed to run as a dedicated unprivileged user (`postallow`). It writes the generated CIDR files to a directory it owns; Postfix reads them directly from there. Reloading Postfix after a run is left to the init system (systemd, rc.d), which handles the privilege boundary cleanly without requiring sudo or root access for Postallow itself.
+
+## Quick-add a domain temporarily
+
+If you're waiting on a time-sensitive e-mail (OTP, account confirmation, etc.) from a domain that isn't in your allowlist yet, use `--quick-add` (or `-q`) to unblock it immediately:
+
+```bash
+sudo postallow --quick-add example.com
+# or short form:
+sudo postallow -q example.com
+```
+
+This resolves the domain's SPF records, appends the resulting permit rules to the live allowlist file, and reloads Postfix straight away — no need to wait for the next scheduled run.
+
+> **Note:** The change is **temporary**. The next time Postallow runs a full update it regenerates the allowlist from scratch, removing the quick-added entry. Postallow prints a ready-to-paste command to add the domain permanently to your `custom_hosts` file.
+
+> **Note:** `--quick-add` must be run as **root** (or via `sudo`) so that `postfix reload` can succeed. If it can't reload Postfix it will print the manual command and exit cleanly.
 
 # Installation
 
@@ -182,9 +199,9 @@ Run `make help` to see all available variables and their defaults.
 
 Edit the configuration file installed at `SYSCONFDIR/postallow/postallow.conf` (e.g. `/etc/postallow/postallow.conf` or `/usr/local/etc/postallow/postallow.conf`):
 
-1. Set `postfixpath` to the output directory created above
+1. Set `output_dir` to the output directory created above
 2. Verify `spftoolspath` points to your SPF-Tools installation
-3. Add any custom domains to `allowlist_hosts`
+3. Add any custom domains to your `custom_hosts` file (e.g. `/etc/postallow/custom_hosts`)
 
 See `postallow.conf(5)` for a description of all options.
 
@@ -210,7 +227,7 @@ Point Postfix's `postscreen_access_list` directly at the output directory. There
 
 **IMPORTANT:** If you choose to enable blocklisting, list the blocklist file *after* the allowlist file in `main.cf`, as shown above. If an IP address inadvertently appears in both lists, the first entry wins. Listing the allowlist first ensures allowlisted hosts are never blocked.
 
-Adjust the paths above to match the `postfixpath` you configured.
+Adjust the paths above to match the `output_dir` you configured.
 
 ## Enable the init service
 
@@ -267,9 +284,11 @@ By default, Postallow includes a number of well-known (and presumably trustworth
 * Bulk Senders
 * Miscellaneous
 
-To add your own additional custom hosts, add them to the ```custom_hosts``` section of the file ```allowlist_hosts``` separated by a single space:
+To add your own additional sending domains, edit your `custom_hosts` file (e.g. `/etc/postallow/custom_hosts`) and append to the `custom_hosts` variable, separating domains with a space:
 
-    custom_hosts="aol.com google.com microsoft.com"
+    custom_hosts="${custom_hosts} mycompany.org anotherbank.com"
+
+This file is preserved across package upgrades. Do not add custom domains to `allowlist_hosts` — that file is package-managed and will be overwritten on upgrade.
 
 Additional trusted mailers are added to the script from time to time, so check back periodically for new versions, or "Watch" this repo to receive update notifications.
 
