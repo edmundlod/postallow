@@ -1,7 +1,7 @@
 # Maintainer: Edmund Lodewijks <edmund at proteamail.com>
 
 pkgname=postallow
-pkgver=4.5.0
+pkgver=4.5.1
 pkgrel=1
 pkgdesc="Modern, non-root Postfix (Postscreen) allowlist generator, based on SPF records"
 arch=(any)
