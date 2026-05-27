@@ -212,10 +212,10 @@ if [ -n "${quick_add_domain}" ]; then
     printf "\n"
     printf "*** TEMPORARY CHANGE ***\n"
     printf "The next full postallow run will regenerate the allowlist and remove this entry.\n"
-    printf "To keep '%s' permanently, add it to your custom hosts file:\n\n" "${quick_add_domain}"
+    printf "To keep '%s' permanently, edit your custom hosts file and add it to the\n" "${quick_add_domain}"
+    printf "custom_hosts variable:\n\n"
     if [ -n "${custom_hosts_file:-}" ]; then
-        printf "  echo 'custom_hosts=\"\${custom_hosts} %s\"' >> %s\n\n" \
-            "${quick_add_domain}" "${custom_hosts_file}"
+        printf "  %s\n\n" "${custom_hosts_file}"
     else
         printf "  Add '%s' to the custom_hosts variable in your custom hosts file.\n\n" \
             "${quick_add_domain}"
