@@ -7,8 +7,8 @@
 # Renamed and updated in 2025 by Edmund Lodewijks                 #
 ###################################################################
 
-version="4.4.1"
-lastupdated="2026-04-13"
+version="4.5.0"
+lastupdated="2026-05-27"
 
 # Usage: 1) Place entire /postallow directory in /usr/local/scripts
 #	 2) Move (and modify, if needed) postallow.conf to /etc
@@ -42,6 +42,8 @@ reject_line_v4="%s\treject\n"
 permit_line_v6="${permit_line_v4}"
 reject_line_v6="${reject_line_v4}"
 
+tmpBase=$(basename "$0")
+
 # Abort script on error (FYI: enabling will cause script to exit silently if mailer has no valid results)
 set -e
 
@@ -53,17 +55,41 @@ fi
 
 printf "Starting Postallow v$version ($lastupdated)\n"
 
-# Check for passed config file
-if [ -n "$1" ]; then
-	config_file="$1"
-elif [ -f "/etc/postallow.conf" ]; then
-    config_file="/etc/postallow.conf"
-elif [ -f "/etc/postallow/postallow.conf" ]; then
-    config_file="/etc/postallow/postallow.conf"
-elif [ -f "/usr/local/etc/postallow.conf" ]; then
-    config_file="/usr/local/etc/postallow.conf"
-elif [ -f "/usr/local/etc/postallow/postallow.conf" ]; then
-    config_file="/usr/local/etc/postallow/postallow.conf"
+# Parse command-line options
+quick_add_domain=""
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -q|--quick-add)
+            shift
+            if [ $# -eq 0 ]; then
+                printf "%s: --quick-add requires a domain argument\n" "$0" >&2
+                exit 1
+            fi
+            quick_add_domain="$1"
+            shift
+            ;;
+        -*)
+            printf "%s: unknown option: %s\n" "$0" "$1" >&2
+            exit 1
+            ;;
+        *)
+            config_file="$1"
+            shift
+            ;;
+    esac
+done
+
+# Locate config file if not set by the positional argument above
+if [ -z "${config_file:-}" ]; then
+    if [ -f "/etc/postallow.conf" ]; then
+        config_file="/etc/postallow.conf"
+    elif [ -f "/etc/postallow/postallow.conf" ]; then
+        config_file="/etc/postallow/postallow.conf"
+    elif [ -f "/usr/local/etc/postallow.conf" ]; then
+        config_file="/usr/local/etc/postallow.conf"
+    elif [ -f "/usr/local/etc/postallow/postallow.conf" ]; then
+        config_file="/usr/local/etc/postallow/postallow.conf"
+    fi
 fi
 
 # Read config file options
@@ -86,6 +112,102 @@ if [ -z "${yahoo_static_hosts:-}" ]; then
 			break
 		fi
 	done
+fi
+
+# Resolve _norm_flag early (needed by both --quick-add and the main run)
+case "${invalid_cidr}" in
+    remove) _norm_flag="-i" ;;
+    *)      _norm_flag="" ;;
+esac
+
+# ---------------------------------------------------------------------------
+# --quick-add: resolve a single domain and append its IPs to the allowlist,
+# then reload Postfix.  The change is temporary — the next full postallow run
+# will regenerate the file.
+# ---------------------------------------------------------------------------
+if [ -n "${quick_add_domain}" ]; then
+    allowlist_file="${output_dir}/${allowlist}"
+
+    printf "\nQuick-adding '%s'...\n" "${quick_add_domain}"
+
+    # Create three temp files for this lightweight run
+    qa_t1="$(mktemp -q /tmp/"${tmpBase}".XXXXXX)" || \
+        { printf "%s: Can't create temp files, exiting\n" "$0" >&2; exit 1; }
+    qa_t2="$(mktemp -q /tmp/"${tmpBase}".XXXXXX)" || \
+        { rm -f "${qa_t1}"; printf "%s: Can't create temp files, exiting\n" "$0" >&2; exit 1; }
+    qa_t3="$(mktemp -q /tmp/"${tmpBase}".XXXXXX)" || \
+        { rm -f "${qa_t1}" "${qa_t2}"; printf "%s: Can't create temp files, exiting\n" "$0" >&2; exit 1; }
+
+    qa_cleanup() { rm -f "${qa_t1}" "${qa_t2}" "${qa_t3}"; }
+
+    printf "Querying SPF records for '%s'...\n" "${quick_add_domain}"
+    "${spftoolspath}"/despf.sh "${quick_add_domain}" | (grep -Ei '^ip' || true) > "${qa_t1}"
+
+    if [ ! -s "${qa_t1}" ]; then
+        printf "No IP entries found in SPF records for '%s'.\n" "${quick_add_domain}" >&2
+        printf "Is this a valid mail-sending domain with an SPF record?\n" >&2
+        qa_cleanup
+        exit 1
+    fi
+
+    printf "Aggregating CIDRs...\n"
+    sed '/\./s/\/32//g' "${qa_t1}" | \
+        "${spftoolspath}"/normalize.sh ${_norm_flag} | \
+        sort -u | ${aggregateCIDR} --quiet --spf > "${qa_t2}"
+
+    printf "Formatting rules...\n"
+    while read -r ip; do
+        format_ip "$ip" "permit"
+    done < "${qa_t2}" > "${qa_t3}"
+
+    qa_numrules="$(cat "${qa_t3}" | wc -l)"
+
+    if [ "${qa_numrules}" -eq 0 ]; then
+        printf "No valid CIDR rules could be generated for '%s'.\n" "${quick_add_domain}" >&2
+        qa_cleanup
+        exit 1
+    fi
+
+    if [ ! -f "${allowlist_file}" ]; then
+        printf "Warning: %s does not exist yet.\n" "${allowlist_file}" >&2
+        printf "Run postallow first to generate the base allowlist, then use --quick-add.\n" >&2
+    fi
+
+    {
+        printf "# quick-add: %s — added %s (temporary; add to custom_hosts to make permanent)\n" \
+            "${quick_add_domain}" "$(date)"
+        cat "${qa_t3}"
+    } >> "${allowlist_file}"
+
+    qa_cleanup
+
+    printf "\nAppended %d rule(s) for '%s' to:\n  %s\n" \
+        "${qa_numrules}" "${quick_add_domain}" "${allowlist_file}"
+
+    # Reload Postfix so the new rules take effect immediately
+    if postfix reload 2>/dev/null; then
+        printf "Postfix reloaded successfully.\n"
+    else
+        printf "\nCould not reload Postfix automatically (need root / sudo?).\n"
+        printf "Apply the new rules manually:\n"
+        printf "  postfix reload\n"
+        printf "or:\n"
+        printf "  systemctl reload postfix\n"
+    fi
+
+    printf "\n"
+    printf "*** TEMPORARY CHANGE ***\n"
+    printf "The next full postallow run will regenerate the allowlist and remove this entry.\n"
+    printf "To keep '%s' permanently, add it to your custom hosts file:\n\n" "${quick_add_domain}"
+    if [ -n "${custom_hosts_file:-}" ]; then
+        printf "  echo 'custom_hosts=\"\${custom_hosts} %s\"' >> %s\n\n" \
+            "${quick_add_domain}" "${custom_hosts_file}"
+    else
+        printf "  Add '%s' to the custom_hosts variable in your custom hosts file.\n\n" \
+            "${quick_add_domain}"
+    fi
+
+    exit 0
 fi
 
 # Read file with hosts that should be allowed
@@ -120,7 +242,6 @@ cleanup() {
 
 # Create temporary files
 printf "\nCreating temporary files...\n"
-tmpBase=$(basename "$0")
 
 tmpPrefix="tmp"
 if [ x"$enable_blocklist" = x"yes" ]; then
@@ -234,11 +355,6 @@ if [ x"$enable_blocklist" = x"yes" ] ; then
 		query_block_host "${h}"
 	done
 fi
-
-case "${invalid_cidr}" in
-	remove) _norm_flag="-i" ;;
-	*)      _norm_flag="" ;;
-esac
 
 printf "\nCIDR and Host summarization...\n"
 # normalize.sh fixes invalid IPv4 CIDRs (non-null host bits) before aggregation;
