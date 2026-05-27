@@ -28,9 +28,11 @@ jobs:
           mkdir dist
           mv ../*.deb dist/
 
-      - name: Get .deb filename
+      - name: Get .deb filename and distribution codename
         id: deb
-        run: echo "filename=$(ls dist/*.deb | xargs basename)" >> $GITHUB_OUTPUT
+        run: |
+          echo "filename=$(ls dist/*.deb | xargs basename)" >> $GITHUB_OUTPUT
+          echo "codename=$(dpkg-parsechangelog --show-field Distribution)" >> $GITHUB_OUTPUT
 
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v3
@@ -42,9 +44,9 @@ jobs:
           for deb in dist/*.deb; do
             pkg=$(basename "$deb")
             url="https://github.com/edmundlod/postallow/releases/download/${{ github.ref_name }}/${pkg}"
-            curl -s -X POST \
+            curl -sf -X POST \
               -H "Authorization: Bearer ${{ secrets.REPO_DISPATCH_APT_AND_RPM }}" \
               -H "Accept: application/vnd.github+json" \
               https://api.github.com/repos/edmundlod/apt/dispatches \
-              -d "{\"event_type\":\"package-built\",\"client_payload\":{\"deb_url\":\"${url}\",\"package\":\"${pkg}\"}}"
+              -d "{\"event_type\":\"package-built\",\"client_payload\":{\"deb_url\":\"${url}\",\"package\":\"${pkg}\",\"codename\":\"${{ steps.deb.outputs.codename }}\"}}"
           done
