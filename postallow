@@ -114,6 +114,20 @@ if [ -z "${yahoo_static_hosts:-}" ]; then
 	done
 fi
 
+# Format an already-normalized ip4:/ip6: entry for the output file.
+# Invalid CIDRs are handled upstream by normalize.sh before aggregation.
+format_ip() {
+	format_ip_iptype="$( echo "$1" | cut -d\: -f1 )"
+	format_ip_ip="$( echo "$1" | cut -d\: -f2- )"
+	if [ -n "$format_ip_ip" ]; then
+		if [ x"$format_ip_iptype" = x"ip4" ]; then
+			printf "$(eval printf "%s" "\${${2}_line_v4}")" "$format_ip_ip"
+		elif [ x"$format_ip_iptype" = x"ip6" ] ; then
+			printf "$(eval printf "%s" "\${${2}_line_v6}")" "$format_ip_ip"
+		fi
+	fi
+}
+
 # Resolve _norm_flag early (needed by both --quick-add and the main run)
 case "${invalid_cidr}" in
     remove) _norm_flag="-i" ;;
@@ -282,20 +296,6 @@ show_dots() {
 		sleep 1
 	done
 	printf "\n"
-}
-
-# Format an already-normalized ip4:/ip6: entry for the output file.
-# Invalid CIDRs are handled upstream by normalize.sh before aggregation.
-format_ip() {
-	format_ip_iptype="$( echo "$1" | cut -d\: -f1 )"
-	format_ip_ip="$( echo "$1" | cut -d\: -f2- )"
-	if [ -n "$format_ip_ip" ]; then
-		if [ x"$format_ip_iptype" = x"ip4" ]; then
-			printf "$(eval printf "%s" "\${${2}_line_v4}")" "$format_ip_ip"
-		elif [ x"$format_ip_iptype" = x"ip6" ] ; then
-			printf "$(eval printf "%s" "\${${2}_line_v6}")" "$format_ip_ip"
-		fi
-	fi
 }
 
 # Let's DO this!
