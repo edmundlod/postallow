@@ -35,6 +35,11 @@ else
   OUTPUTDIR ?= /var/lib/postallow
 endif
 
+# spf-tools directory — probe the PATH for despf.sh; fall back to /usr/local/bin.
+# Override on the command line: make install SPFTOOLSPATH=/opt/spf-tools/bin
+_SPFTOOLSPATH_PROBE := $(shell command -v despf.sh 2>/dev/null)
+SPFTOOLSPATH ?= $(if $(_SPFTOOLSPATH_PROBE),$(shell dirname $(_SPFTOOLSPATH_PROBE)),/usr/local/bin)
+
 # Init system unit directories – override if your layout differs.
 # On Linux the systemd units go to the vendor preset directory (not /etc).
 # On FreeBSD/NetBSD ports install rc.d scripts under PREFIX/etc/rc.d.
@@ -77,6 +82,7 @@ help:
 	@printf "  %-20s rc.d script (FreeBSD)              [%s]\n" "RCDIR_FREEBSD"   "$(RCDIR_FREEBSD)"
 	@printf "  %-20s rc.d script (OpenBSD)              [%s]\n" "RCDIR_OPENBSD"   "$(RCDIR_OPENBSD)"
 	@printf "  %-20s rc.d script (NetBSD)               [%s]\n" "RCDIR_NETBSD"    "$(RCDIR_NETBSD)"
+	@printf "  %-20s spf-tools directory                 [%s]\n" "SPFTOOLSPATH"    "$(SPFTOOLSPATH)"
 	@printf "  %-20s compress man pages (auto/yes/no)   [%s]\n" "COMPRESS_MAN"    "$(COMPRESS_MAN)"
 	@printf "  %-20s staged install root (packagers)    [%s]\n" "DESTDIR"         "$(DESTDIR)"
 	@echo ""
@@ -106,6 +112,7 @@ install:
 			-e 's|@SYSCONFDIR@|$(SYSCONFDIR)|g' \
 			-e 's|@DATADIR@|$(DATADIR)|g' \
 			-e 's|@OUTPUTDIR@|$(OUTPUTDIR)|g' \
+			-e 's|@SPFTOOLSPATH@|$(SPFTOOLSPATH)|g' \
 			conf/postallow.conf.in \
 			> $(DESTDIR)$(SYSCONFDIR)/postallow/postallow.conf; \
 		chmod 644 $(DESTDIR)$(SYSCONFDIR)/postallow/postallow.conf; \
