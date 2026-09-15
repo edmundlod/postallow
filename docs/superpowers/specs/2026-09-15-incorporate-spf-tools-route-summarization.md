@@ -48,15 +48,17 @@ here — see Non-Goals.
   `despf.sh`, `normalize.sh`, and both `include/*.inc.sh` carry Apache-2.0
   headers. Clear to incorporate, provided Apache-2.0 §4 obligations are met
   (retain copyright/license notices, state what changed).
-- **nabbi/route-summarization: no license.** GitHub reports `license: null`;
-  no `LICENSE` file or license text anywhere in the repo, including
-  `aggregateCIDR.pl` itself. The user's own fork, `edmundlod/route-summarization`,
-  has a self-added `LICENSE` claiming BSD-3-Clause
-  (`Copyright (c) 2025, Edmund Lodewijks`), which does not by itself carry
-  authority over nabbi's original, unlicensed code. The user has contacted
-  nabbi about formalizing this; outcome unknown. **Per explicit user
-  direction, incorporate it now anyway**, isolated in its own file with its
-  own attribution header, so it is a one-file revert if nabbi objects.
+- **nabbi/route-summarization: MIT License**, confirmed `LICENSE` file
+  (`Copyright (c) 2021-2026 Nic Boet`). This was unresolved earlier in
+  spec discussion — GitHub previously reported `license: null` with no
+  `LICENSE` file anywhere in the repo — but nabbi has since added one
+  following the user's outreach. Clear to vendor now under the same terms
+  as spf-tools: retain the copyright and permission notice (MIT's only
+  requirement). The user's own fork, `edmundlod/route-summarization`, still
+  carries a separately self-added BSD-3-Clause `LICENSE`
+  (`Copyright (c) 2025, Edmund Lodewijks`) predating nabbi's MIT grant —
+  irrelevant now that the upstream has its own confirmed license; vendor
+  against nabbi's MIT terms, not the fork's BSD-3-Clause claim.
 
 ## Design
 
@@ -117,9 +119,9 @@ Vendor it as its own file, still invoked as a subprocess but no longer
 externally fetched:
 
 - Add `contrib/aggregateCIDR.pl` with an attribution header noting original
-  author `nabbi` (https://github.com/nabbi/route-summarization) and the
-  BSD-3-Clause terms as claimed in the user's fork — deliberately isolated
-  given the pending license discussion.
+  author Nic Boet / `nabbi` (https://github.com/nabbi/route-summarization),
+  MIT License, reproducing the copyright and permission notice verbatim as
+  required by the license.
 - Install via the `Makefile`'s `install` target alongside `postallow` in
   `$(BINDIR)`; replace the `command -v aggregateCIDR.pl` PATH lookup with a
   fixed install path.
@@ -135,6 +137,10 @@ externally fetched:
   `contrib/apparmor/usr.bin.postallow` to the new vendored install path.
 - Update `README.md`/man pages to drop route-summarization as an external
   requirement; adjust the `nabbi` credit line.
+- Add the MIT license text to the repo (e.g. `LICENSES/MIT-route-summarization.txt`,
+  since it's a distinct copyright holder from postallow's own MIT grant) and
+  reference it alongside the Apache-2.0 text in `LICENSE.md`'s "Third-party
+  code" section and in `debian/copyright`.
 
 ### 3. Versioning
 
@@ -171,10 +177,3 @@ matching the entry style already used for 4.5.0/4.5.1.
   CIDRs and a DNS lookup count) — separate follow-up spec/plan, to build on
   the now-inline despf functions from this project (which make instrumenting
   a lookup counter straightforward).
-
-## Open Risks
-
-- **route-summarization licensing is unresolved.** nabbi has not confirmed
-  terms; the BSD-3-Clause claim in the user's fork has no demonstrated
-  authority over the original code. Vendoring proceeds per explicit user
-  instruction, isolated to one file for easy reversion if nabbi objects.
