@@ -1,0 +1,47 @@
+name: Dispatch packaging branches
+
+# Runs when a release is tagged on main. Rebases the rpm branch (which
+# carries contrib/rpm/postallow.spec and build-rpm.yml — see
+# docs/superpowers/specs/2026-09-15-drop-debian-split-rpm-branch.md) onto
+# the new tag and syncs its own version file, then pushes. That push is
+# what triggers build-rpm.yml; it no longer triggers on tag push directly,
+# since a tag name can only point at one commit and main already owns it.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  dispatch-rpm:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: rpm
+          fetch-depth: 0
+
+      - name: Extract version
+        id: version
+        run: echo "version=$(echo '${{ github.ref_name }}' | sed 's/^v//')" >> $GITHUB_OUTPUT
+
+      - name: Rebase rpm onto the new tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git rebase "${{ github.ref_name }}"
+
+      - name: Sync contrib/rpm/postallow.spec version
+        run: |
+          sed -i \
+            "s/^%{!?pkg_version: %global pkg_version .*}$/%{!?pkg_version: %global pkg_version ${{ steps.version.outputs.version }}}/" \
+            contrib/rpm/postallow.spec
+          if ! git diff --quiet; then
+            git commit -am "release: sync to ${{ github.ref_name }}"
+          fi
+
+      - name: Push rpm
+        run: git push --force-with-lease origin rpm

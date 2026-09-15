@@ -19,7 +19,6 @@ A script for generating a Postscreen allowlist (and optionally a blocklist) base
 - [Usage](#usage)
   - [Quick-add a domain temporarily](#quick-add-a-domain-temporarily)
 - [Installation](#installation)
-  - [via apt](#via-apt)
   - [via dnf (AlmaLinux 10 / RHEL 10 / Fedora / OpenSUSE)](#via-dnf-almalinux-10--rhel-10--fedora--opensuse)
   - [Manual installation](#manual-installation)
     - [1. Create the postallow user, output directory, and install dependencies](#1-create-the-postallow-user-output-directory-and-install-dependencies)
@@ -91,23 +90,6 @@ This resolves the domain's SPF records, appends the resulting permit rules to th
 # Installation
 
 > **Coming from Postwhite or an earlier Postallow?** See [MIGRATING.md](MIGRATING.md) for the migration path, including how to clean up old manual installs and where output files have moved.
-
-## via apt
-
-The apt repository handles all dependencies and user creation automatically:
-
-```bash
-sudo mkdir -p /usr/share/keyrings
-curl -fsSL https://edmundlod.github.io/apt/key.asc \
-  | sudo tee /usr/share/keyrings/edmundlod-apt.asc > /dev/null
-echo "deb [signed-by=/usr/share/keyrings/edmundlod-apt.asc] \
-https://edmundlod.github.io/apt trixie main" \
-  | sudo tee /etc/apt/sources.list.d/edmundlod.list
-sudo apt update
-sudo apt install postallow
-```
-
-Then continue with [Configure Postallow](#configure-postallow).
 
 ## via dnf (AlmaLinux 10 / RHEL 10 / Fedora / OpenSUSE)
 
