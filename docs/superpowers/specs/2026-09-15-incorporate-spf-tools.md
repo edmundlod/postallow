@@ -63,19 +63,19 @@ headers. Clear to incorporate, provided Apache-2.0 §4 obligations are met
    `origin/release/4.5.1` and push; branch this work from the resulting
    `main`. Pushing to a shared branch — confirm with the user immediately
    before doing it, independent of spec approval.
-2. **Move Debian packaging (`debian/`), RPM packaging (`contrib/rpm/`), and
-   CI (`.github/workflows/ci.yml`) off `main` onto their own dedicated
-   branches.** Raised by the user during spec review (`paad:pushback`,
-   2026-09-15) — realized only after the original combined spec was
-   written, and explicitly wanted *before* this work starts. This is a
-   separate architectural change in its own right (how those branches get
-   built/released, how CI keeps running, how they stay in sync with `main`)
-   and is **not designed here** — it needs its own brainstorming/spec pass.
+2. **Drop Debian packaging from the repo entirely, and move RPM packaging
+   (`contrib/rpm/`) off `main` onto a dedicated `rpm` branch.** Raised by
+   the user during spec review (`paad:pushback`, 2026-09-15) — realized
+   only after the original combined spec was written, and explicitly
+   wanted *before* this work starts. Designed separately:
+   `docs/superpowers/specs/2026-09-15-drop-debian-split-rpm-branch.md`.
    Until it lands, **this spec's implementation does not touch
-   `debian/control`, `contrib/rpm/postallow.spec`, or
-   `.github/workflows/ci.yml`** — see Design, below. Those files' updates
-   (removing the `spf-tools` dependency/CI steps) become follow-up work on
-   the respective packaging branches once they exist.
+   `contrib/rpm/postallow.spec`** — see Design, below.
+   `.github/workflows/ci.yml` is unaffected by that other spec (it stays on
+   `main` either way) and *is* in scope here — it currently installs
+   spf-tools as part of its test setup and needs the corresponding steps
+   removed. `debian/control`/`debian/copyright` no longer exist once the
+   other spec lands, so there's nothing there to update.
 
 ## Design
 
@@ -132,14 +132,14 @@ Background) with direct calls to the now-local functions.
 `man/man5/postallow.conf.5`); the "Install spf-tools" block in
 `contrib/install.sh`; `/usr/bin/spf-tools/`, `despf.sh`, `/tmp/despf-loop-*`
 rules in `contrib/apparmor/usr.bin.postallow` (retain whatever `host`
-command access `myhost()` needs, under postallow's own profile). *(Not
-included: `contrib/rpm/postallow.spec`, `debian/control`,
-`.github/workflows/ci.yml` — see Prerequisites.)*
+command access `myhost()` needs, under postallow's own profile); the
+spf-tools clone/install step in `.github/workflows/ci.yml`. *(Not
+included: `contrib/rpm/postallow.spec` — see Prerequisites. `debian/*`
+doesn't exist once that spec lands, so nothing to update there.)*
 
 **Attribution artifacts:** add full Apache-2.0 text to the repo (e.g.
 `LICENSES/Apache-2.0.txt`); reference it from a new "Third-party code"
-section in `LICENSE.md` and from `debian/copyright` *(once that file is
-back on a branch this work can reach — see Prerequisites)*.
+section in `LICENSE.md`.
 
 **Docs:** update `README.md`, `man/man1/postallow.1`,
 `man/man5/postallow.conf.5`, and add a `MIGRATING.md` entry, to drop
@@ -183,5 +183,6 @@ is a port, not a rewrite, so failure modes must not change.
   commit after both this spec and the route-summarization spec land,
   matching existing repo convention (e.g. commit `1b1a249`, a dedicated
   release-bump commit separate from the feature commits before it).
-- Moving `debian/`, `contrib/rpm/`, and `.github/workflows/ci.yml` off
-  `main` — see Prerequisites; needs its own spec.
+- Dropping Debian packaging and moving RPM packaging off `main` — see
+  Prerequisites; spec written at
+  `docs/superpowers/specs/2026-09-15-drop-debian-split-rpm-branch.md`.
