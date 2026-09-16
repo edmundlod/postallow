@@ -4,9 +4,13 @@ name: Dispatch packaging branches
 # carries contrib/rpm/postallow.spec and build-rpm.yml — see
 # docs/superpowers/specs/2026-09-15-drop-debian-split-rpm-branch.md) from
 # the new tag's tree, with the RPM-only files restored on top, syncs the
-# spec's version, and force-pushes. That push is what triggers
-# build-rpm.yml; it no longer triggers on tag push directly, since a tag
-# name can only point at one commit and main already owns it.
+# spec's version, and force-pushes. It then explicitly dispatches
+# build-rpm.yml via the API, rather than relying on that push to trigger
+# it: GitHub doesn't let GITHUB_TOKEN-authored pushes cascade into
+# triggering other workflows (anti-loop guard), so the push alone would
+# silently never build anything. build-rpm.yml no longer triggers on tag
+# push directly, since a tag name can only point at one commit and main
+# already owns it.
 #
 # This overlays rather than rebases: main permanently deletes
 # contrib/rpm/ and build-rpm.yml (RPM packaging lives only on this
@@ -27,6 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: write
 
     steps:
       - uses: actions/checkout@v5
@@ -58,3 +63,8 @@ jobs:
         run: |
           git commit -m "release: sync rpm branch to ${{ github.ref_name }}"
           git push --force-with-lease origin rpm
+
+      - name: Dispatch build-rpm.yml
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run build-rpm.yml --ref rpm
