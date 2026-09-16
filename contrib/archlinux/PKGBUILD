@@ -1,13 +1,13 @@
 # Maintainer: Edmund Lodewijks <edmund at proteamail.com>
 
 pkgname=postallow
-pkgver=4.5.1
+pkgver=4.6.0
 pkgrel=1
 pkgdesc="Modern, non-root Postfix (Postscreen) allowlist generator, based on SPF records"
 arch=(any)
 url="https://github.com/edmundlod/postallow"
 license=('MIT')
-depends=('glibc' 'bash' 'spf-tools' 'route-summarization' 'postfix')
+depends=('glibc' 'bash' 'perl' 'perl-net-cidr-lite' 'postfix')
 optdepends=(
     'knot-resolver: strongly recommended for DNS lookups (or any other caching DNS resolver)'
 )

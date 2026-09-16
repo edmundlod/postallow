@@ -5,6 +5,33 @@ Entries are newest-first. Dates are YYYY-MM-DD.
 
 ---
 
+## 4.6.0 — 2026-09-16 — Edmund Lodewijks
+
+- Port spf-tools' `despf.sh`/`despf.inc.sh` (SPF-record expansion) and
+  `normalize.sh` (CIDR normalisation) directly into `postallow`; neither is
+  an external dependency anymore. Remove the now-unused `spftoolspath`
+  config option.
+- Vendor route-summarization's `aggregateCIDR.pl` into `contrib/` (MIT,
+  Nic Boet); `make install` installs it alongside `postallow` instead of
+  `contrib/install.sh` fetching it separately. Add `aggregatecidrpath`
+  config option (default `/usr/local/bin`) so `postallow` resolves it by
+  fixed path instead of a `PATH` search.
+- Fix `aggregateCIDR.pl`'s shebang (`#!/usr/bin/perl` → `#!/usr/bin/env
+  perl`) so it resolves perl via `PATH`; FreeBSD's `pkg install perl5` puts
+  perl at `/usr/local/bin/perl`, not `/usr/bin/perl`, which broke CIDR
+  aggregation (and therefore the whole allowlist) on FreeBSD.
+- Drop Debian packaging (`debian/`, `build-deb.yml`) from `main`; Debian
+  packaging is now handled directly by the maintainer, outside this repo.
+  Remove the README's "via apt" install section.
+- Move RPM packaging (`contrib/rpm/`, `build-rpm.yml`) off `main` onto a
+  dedicated `rpm` branch. Add `dispatch-packaging.yml`: on a new `main`
+  tag, rebases `rpm` onto it, syncs the spec file's version, and pushes,
+  which fires the RPM build on that branch.
+- Consolidate the repo's two parallel trunk branches (`main`/`master`)
+  down to `main` alone, now GitHub's default branch too.
+- See `MIGRATING.md` for the 4.5.x → 4.6.0 upgrade path (removing
+  `spftoolspath`, cleaning up manually-installed spf-tools scripts).
+
 ## 4.5.1 — 2026-05-27 — Edmund Lodewijks
 
 - Fix `--quick-add`: `format_ip()` was defined after the early-exit block,
