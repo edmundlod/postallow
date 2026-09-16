@@ -15,9 +15,6 @@ lastupdated="2026-05-27"
 #	 3) Run /usr/local/scripts/postallow
 # Optional config file passed via command line overrides the default config file location.
 #
-# Requires SPF-Tools (https://github.com/edmundlod/spf-tools)
-# Please update your copy of spf-tools whenever you update Postallow
-#
 # Thanks to `nabbi` for Perl CIDR integration.
 # Thanks to Steve Jenkins (https://www.stevejenkins.com/) for the orignal version
 #           (called Postwhite).
@@ -115,7 +112,7 @@ if [ -z "${yahoo_static_hosts:-}" ]; then
 fi
 
 # Format an already-normalized ip4:/ip6: entry for the output file.
-# Invalid CIDRs are handled upstream by normalize.sh before aggregation.
+# Invalid CIDRs are handled upstream by normalize_cidrs before aggregation.
 format_ip() {
 	format_ip_iptype="$( echo "$1" | cut -d\: -f1 )"
 	format_ip_ip="$( echo "$1" | cut -d\: -f2- )"
@@ -144,11 +141,6 @@ esac
 # (not part of upstream spf-tools) replacing the loopfile-provisioning that
 # despf.sh's own wrapper script used to do.
 # ---------------------------------------------------------------------------
-
-SPFTRC=${SPFTRC:-"$HOME/.spf-toolsrc"}
-test -r "$SPFTRC" && . "$SPFTRC"
-
-DNS_TIMEOUT=${DNS_TIMEOUT:-"2"}
 
 myhost() {
   host -W "$DNS_TIMEOUT" "$@" || { host -W "$DNS_TIMEOUT" "$@" 1>&2; exit 1; }
@@ -442,7 +434,18 @@ expand6() {
 # loop-detection tempfile, seed it, call despfit, then clean up. despfit()
 # requires that tempfile as an argument but doesn't create it itself, so
 # something has to — this replaces despf.sh's wrapper for that one job.
+# .spf-toolsrc sourcing is deliberately done here rather than at top level:
+# despf_run() always runs in a subshell (as a pipeline component), so
+# confining it here keeps a user-supplied rc file from being able to
+# override postallow's own config variables (output_dir, allowlist, etc.)
+# — this is a documented, deliberate deviation from a purely mechanical
+# verbatim port.
 despf_run() {
+  SPFTRC=${SPFTRC:-"$HOME/.spf-toolsrc"}
+  test -r "$SPFTRC" && . "$SPFTRC"
+
+  DNS_TIMEOUT=${DNS_TIMEOUT:-"2"}
+
   _dr_loopfile="$(mktemp -q /tmp/despf-loop-XXXXXXX)" || return 1
   echo random-non-match-tdaoeinthaonetuhanotehu > "${_dr_loopfile}"
   despfit "$1" "${_dr_loopfile}"
