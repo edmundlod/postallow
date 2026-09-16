@@ -1,0 +1,63 @@
+name: Build RPM package
+
+on:
+  push:
+    branches:
+      - rpm
+
+jobs:
+  build-rpm:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v5
+
+      # This branch is rebased onto a main tag by dispatch-packaging.yml
+      # before every push, so contrib/rpm/postallow.spec's pkg_version is
+      # always in sync with the release being packaged. Read the version
+      # from there rather than github.ref_name, which is now a branch name
+      # ("rpm"), not a tag.
+      - name: Extract version
+        id: version
+        run: |
+          version=$(sed -n "s/^%{!?pkg_version: %global pkg_version \(.*\)}$/\1/p" contrib/rpm/postallow.spec)
+          echo "version=${version}" >> $GITHUB_OUTPUT
+          echo "tag=v${version}" >> $GITHUB_OUTPUT
+
+      - name: Create source tarball
+        run: |
+          mkdir dist
+          git archive \
+            --prefix=postallow-${{ steps.version.outputs.version }}/ \
+            HEAD \
+          | gzip > dist/postallow-${{ steps.version.outputs.version }}.tar.gz
+
+      - name: Build RPM
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          docker run --rm \
+            -e VERSION \
+            -v "${{ github.workspace }}:/src" \
+            -w /src \
+            almalinux:10 bash -c '
+              set -e
+              dnf install -y rpm-build rpmdevtools make systemd-rpm-macros
+              rpmdev-setuptree
+              cp dist/*.tar.gz ~/rpmbuild/SOURCES/
+              rpmbuild -bb --define "pkg_version $VERSION" contrib/rpm/postallow.spec
+              find ~/rpmbuild/RPMS -name "*.rpm" -exec cp {} /src/dist/ \;
+            '
+
+      - name: Get RPM filename
+        id: rpm
+        run: echo "filename=$(ls dist/*.rpm | xargs basename)" >> $GITHUB_OUTPUT
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          files: dist/*.rpm
+
