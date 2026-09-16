@@ -452,6 +452,67 @@ despf_run() {
 # end of ported spf-tools code
 
 # ---------------------------------------------------------------------------
+# normalize_cidrs() below is adapted verbatim (as a function instead of a
+# standalone script) from spf-tools' normalize.sh, Copyright 2015 spf-tools
+# team (see AUTHORS at https://github.com/spf-tools/spf-tools), licensed
+# under the Apache License, Version 2.0 (see LICENSES/Apache-2.0.txt).
+# Changes made: wrapped in a function taking the same "-i" flag as $1
+# instead of being a standalone script; no logic changes.
+# ---------------------------------------------------------------------------
+
+normalize_cidrs() {
+  test "$1" = "-i" && ignore=1
+
+  ip2int() {
+    local a b c d
+    echo $1 | while IFS="." read a b c d ; do
+      echo $(((((((a << 8) | b) << 8) | c) << 8) | d))
+    done
+  }
+
+  int2ip() {
+    local ui32=$1; shift
+    local ip n
+    for n in 1 2 3 4; do
+      ip=$((ui32 & 0xff))${ip:+.}$ip
+      ui32=$((ui32 >> 8))
+    done
+    echo $ip
+  }
+
+  network() {
+    local ia netmask
+    echo $1 | while  IFS="/" read ia netmask; do
+      local addr=$(ip2int $ia);
+      local mask=$((0xffffffff << (32 -$netmask)));
+      echo $(int2ip $((addr & mask)))/$netmask
+    done
+  }
+
+  while
+    read i
+  do
+    cidr=$(echo $i | cut -d: -f2-)
+    ipver=$(echo $i | cut -d: -f1)
+    if [ "x$ipver" = "xip4" ] ; then
+      # check if is a CIDR
+      nm=$(echo $i | cut -s -d/ -f2)
+      if [ "x$nm" = "x32" ] ; then
+        echo $i
+      elif [ "x$nm" = "x" ] ; then
+        echo $i
+      else
+        result="ip4:$(network $cidr)"
+        test -n "$ignore" || { echo $result; continue; }
+        test "$result" = "$i" && echo $i || true
+      fi
+    else
+      echo $i
+    fi
+  done
+}
+
+# ---------------------------------------------------------------------------
 # --quick-add: resolve a single domain and append its IPs to the allowlist,
 # then reload Postfix.  The change is temporary — the next full postallow run
 # will regenerate the file.
