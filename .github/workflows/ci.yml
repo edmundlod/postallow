@@ -14,7 +14,8 @@ on:
 # Every job follows the same sequence:
 #   1. Install postfix, DNS tools, Perl + CIDR modules, and git.
 #   2. Run contrib/install.sh as root — creates the postallow user and output
-#      directory, and installs spf-tools + aggregateCIDR.pl.
+#      directory, and installs aggregateCIDR.pl (SPF parsing/DNS querying is
+#      built into postallow itself as of v4.6.0, no separate install needed).
 #   3. Install the postallow script + config + host list + static Yahoo data.
 #   4. Write a minimal postallow.conf pointing at the correct paths.
 #   5. Configure postfix (loopback-only listener; file-based logging for containers).
@@ -74,7 +75,6 @@ jobs:
         run: |
           cat > /tmp/postallow.conf <<'EOF'
           allowlist_hosts=/etc/postallow/allowlist_hosts
-          spftoolspath=/usr/local/bin
           postfixpath=/var/lib/postallow
           allowlist=postscreen_spf_allowlist.cidr
           blocklist=postscreen_spf_blocklist.cidr
@@ -150,7 +150,6 @@ jobs:
         run: |
           cat > /etc/postallow/postallow.conf <<'EOF'
           allowlist_hosts=/etc/postallow/allowlist_hosts
-          spftoolspath=/usr/local/bin
           postfixpath=/var/lib/postallow
           allowlist=postscreen_spf_allowlist.cidr
           blocklist=postscreen_spf_blocklist.cidr
@@ -226,7 +225,6 @@ jobs:
         run: |
           cat > /etc/postallow/postallow.conf <<'EOF'
           allowlist_hosts=/etc/postallow/allowlist_hosts
-          spftoolspath=/usr/local/bin
           postfixpath=/var/lib/postallow
           allowlist=postscreen_spf_allowlist.cidr
           blocklist=postscreen_spf_blocklist.cidr
@@ -298,7 +296,6 @@ jobs:
         run: |
           cat > /etc/postallow/postallow.conf <<'EOF'
           allowlist_hosts=/etc/postallow/allowlist_hosts
-          spftoolspath=/usr/local/bin
           postfixpath=/var/lib/postallow
           allowlist=postscreen_spf_allowlist.cidr
           blocklist=postscreen_spf_blocklist.cidr
@@ -335,7 +332,9 @@ jobs:
   #   - Package manager: pkg (not apt/dnf)
   #   - Perl modules: p5- prefix (p5-Net-CIDR-Lite, p5-NetAddr-IP)
   #   - DNS tools: bind-tools (provides dig; base FreeBSD ships only host/nslookup)
-  #   - bash: not in base; spf-tools may need it — installed explicitly
+  #   - bash: not in base; installed explicitly for general shell compatibility
+  #     (postallow itself only needs /bin/sh, but keeping bash available here
+  #     matches the other jobs' environments)
   #   - User creation: pw useradd (handled by contrib/install.sh already)
   #   - Data directory: /var/db/postallow (not /var/lib/)
   #   - Config paths: /usr/local/etc/postallow/ (not /etc/postallow/)
@@ -375,7 +374,8 @@ jobs:
             
             # --- Set up postallow user, data directory, and dependencies ---
             # contrib/install.sh detects FreeBSD via uname and uses pw(8).
-            # It also installs spf-tools and aggregateCIDR.pl.
+            # It also installs aggregateCIDR.pl (SPF parsing/DNS querying is
+            # built into postallow itself as of v4.6.0).
             sh contrib/install.sh
 
             # --- Install postallow script, host list, and static data ---
@@ -390,7 +390,6 @@ jobs:
             # --- Write postallow.conf (FreeBSD paths) ---
             cat > /usr/local/etc/postallow/postallow.conf <<'CONF'
             allowlist_hosts=/usr/local/etc/postallow/allowlist_hosts
-            spftoolspath=/usr/local/bin
             postfixpath=/var/db/postallow
             allowlist=postscreen_spf_allowlist.cidr
             blocklist=postscreen_spf_blocklist.cidr

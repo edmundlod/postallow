@@ -53,17 +53,16 @@ If all of the allowlist mailers are selected when Postallow runs, the resulting 
 By default, Postallow has blocklisting turned off. Most users will not need to ever turn it on, but it's there if you *really* believe you need it. If you choose to enable it, make sure you understand the implications of blocklisting IP addresses based on their hostnames and associated mailers, and re-run Postallow often via cron to make sure you're not inadvertently blocking legitimate senders.
 
 # Requirements
-Postallow runs as a shell script (```/bin/sh```) and relies on scripts from the <a target="_blank"
-href="https://github.com/spf-tools/spf-tools">SPF-Tools</a> project (**despf.sh**, **normalize.sh**) to help recursively query and normalise SPF records. Unless you install via `apt` or `yum`/`dnf` (see below), use `contrib/install.sh` or the manual steps in the [Manual installation](#manual-installation) section to install them, then confirm the `spftoolspath` value in `postallow.conf`.
+Postallow runs as a shell script (```/bin/sh```). SPF-record parsing and DNS
+querying (originally from the <a target="_blank"
+href="https://github.com/spf-tools/spf-tools">spf-tools</a> project) are
+built directly into `postallow` as of v4.6.0 — no external install needed.
 
 In order to run `postallow` you will need:
 
 * A shell
 * Perl 5+
-* [spf-tools](https://github.com/spf-tools/spf-tools)
-* [route-summarization](https://github.com/edmundlod/route-summarization)
-
-**Please update SPF-Tools whenever you update Postallow, as both are under continuous development, and sometimes new features of Postallow depend upon an updated version of SPF-Tools.**
+* [route-summarization](https://github.com/edmundlod/route-summarization) (for CIDR aggregation)
 
 Postallow also assumes that you have **Postfix** and the appropriate **bind-utils** package for your Linux / Unix(-y) system installed on your system.
 
@@ -104,7 +103,7 @@ sudo dnf copr enable edmundlod/postallow
 Optional: Harden this COPR repo by restricting it to only be able to pull required packages from it:
 
 ```bash
-echo "includepkgs=postallow spf-tools route-summarization" \                                                                                                                       
+echo "includepkgs=postallow route-summarization" \                                                                                                                       
   | sudo tee -a /etc/yum.repos.d/edmundlod-postallow-postallow.repo                                                                                                                
 ```
 
@@ -124,7 +123,7 @@ A package is available in the `AUR`. The `PKGBUILD`, `sysusers`, and `tmpfiles` 
 
 Install requirements:
 
-* `git` — to fetch spf-tools and route-summarization
+* `git` — to fetch route-summarization
 * `make` — to run `make install`
 
 ### 1. Create the postallow user, output directory, and install dependencies
@@ -133,7 +132,7 @@ A helper script is provided for common platforms:
 
     sudo contrib/install.sh
 
-This creates the `postallow` system user and the output directory with correct ownership, and installs [spf-tools](https://github.com/spf-tools/spf-tools) and [aggregateCIDR.pl](https://github.com/edmundlod/route-summarization) into `/usr/local/bin/`. OS packagers should handle all of this in their own package lifecycle hooks instead.
+This creates the `postallow` system user and the output directory with correct ownership, and installs [aggregateCIDR.pl](https://github.com/edmundlod/route-summarization) into `/usr/local/bin/`. OS packagers should handle all of this in their own package lifecycle hooks instead.
 
 If you prefer to do it manually, or are on an unsupported platform, perform each step in turn:
 
@@ -155,12 +154,6 @@ If you prefer to do it manually, or are on an unsupported platform, perform each
 | OpenBSD | `/var/postallow` |
 
     install -d -o postallow -m 755 /var/lib/postallow   # adjust path for your platform
-
-**Install spf-tools:**
-
-    git clone --depth=1 https://github.com/spf-tools/spf-tools /tmp/spf-tools
-    for f in /tmp/spf-tools/*.sh; do install -m 755 "$f" /usr/local/bin/; done
-    rm -rf /tmp/spf-tools
 
 **Install aggregateCIDR.pl:**
 
@@ -186,8 +179,7 @@ Run `make help` to see all available variables and their defaults.
 Edit the configuration file installed at `SYSCONFDIR/postallow/postallow.conf` (e.g. `/etc/postallow/postallow.conf` or `/usr/local/etc/postallow/postallow.conf`):
 
 1. Set `output_dir` to the output directory created above
-2. Verify `spftoolspath` points to your SPF-Tools installation
-3. Add any custom domains to your `custom_hosts` file (e.g. `/etc/postallow/custom_hosts`)
+2. Add any custom domains to your `custom_hosts` file (e.g. `/etc/postallow/custom_hosts`)
 
 See `postallow.conf(5)` for a description of all options.
 
@@ -300,17 +292,17 @@ The ```yahoo_static_hosts.txt``` file can be periodically updated by running the
 To enable blocklisting, set ```enable_blocklist=yes``` and then list blocklisted hosts in ```blocklist_hosts```. Please refer to the blocklisting warning above. Blocklisting is not the primary purpose of Postallow, and most users will never need to turn it on.
 
 ## Invalid hosts
-Some mailers publish SPF records containing invalid CIDR ranges — network addresses with non-null host bits (e.g. `192.168.1.5/24` instead of `192.168.1.0/24`). Postallow corrects these before aggregation using `normalize.sh` from spf-tools.
+Some mailers publish SPF records containing invalid CIDR ranges — network addresses with non-null host bits (e.g. `192.168.1.5/24` instead of `192.168.1.0/24`). Postallow corrects these before aggregation (logic originally from spf-tools' `normalize.sh`, built in as of v4.6.0).
 
 The default behaviour (`invalid_cidr=fix`) corrects the network address to the proper network — the same result Postfix would derive internally anyway, so no legitimate senders are lost. Set `invalid_cidr=remove` in `postallow.conf` to instead drop the range entirely, which was the original Postwhite and early Postallow behaviour.
 
-Other options in ```postallow.conf``` include changing the filenames for your allowlist & blocklist, Postfix path, and SPF-Tools path.
+Other options in ```postallow.conf``` include changing the filenames for your allowlist & blocklist and Postfix path.
 
 # Credits
 
 By the original author:
 * Special thanks to Mike Miller for his 2013 <a target="_blank" href="https://archive.mgm51.com/sources/gallowlist.html">gallowlist script</a> that initially got me tinkering with SPF-based Postscreen allowlists. The temp file creation and ```printf``` statement near the end of the Postallow script are remnants of his original script.
-* Thanks to Jan Sarenik (author of <a target="_blank" href="https://github.com/jsarenik/spf-tools">SPF-Tools</a>).
+* Thanks to Jan Sarenik and the spf-tools team (<a target="_blank" href="https://github.com/spf-tools/spf-tools">spf-tools</a>), whose SPF-parsing and DNS-query code is incorporated directly into Postallow as of v4.6.0.
 * Thanks to <a target="_blank" href="https://github.com/jcbf">Jose Borges Ferreira</a> for patches and contributions to Postallow, include internal code to validate CIDRs.
 * Thanks to <a target="_blank" href="https://github.com/corrideat">Ricardo Iván Vieitez Parra</a> for contributions to Postallow, including external config file support, normalization improvements, error handling, and additional modifications that allow Postallow to run on additional systems.
 * Thanks to partner (business... not life) <a target="_blank" href="http://stevecook.net/">Steve Cook</a> for helping me cludge through Bash scripting, and for writing the initial version of the ```scrape_yahoo``` script.

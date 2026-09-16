@@ -52,13 +52,6 @@ and
 .B HOST LIST FILE
 below).
 .TP
-.BI spftoolspath= path
-Directory containing
-.BR despf.sh (1)
-from the
-.B spf-tools
-package.
-.TP
 .BI output_dir= path
 Directory to which
 .B postallow
@@ -160,7 +153,6 @@ custom_hosts="example.com mycompany.org"
 
 allowlist_hosts=/usr/share/postallow/allowlist_hosts
 custom_hosts_file=/etc/postallow/custom_hosts
-spftoolspath=/usr/bin/spf-tools
 output_dir=/var/lib/postallow
 
 include_yahoo="no"

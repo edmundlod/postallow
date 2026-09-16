@@ -45,19 +45,17 @@
   /usr/bin/expr   ix,
   /usr/bin/kill   ix,
   /bin/kill       ix,
+  /usr/bin/tr     ix,
+  /usr/bin/rm     ix,
+  /bin/rm         ix,
 
-  # --- DNS lookup used by despf.sh ---
+  # --- DNS lookup used by postallow's own ported despf functions ---
   /usr/bin/host   ix,
   network inet  dgram,
   network inet6 dgram,
   network inet  stream,
   network inet6 stream,
   network unix  stream,   # systemd-resolved stub socket
-
-  # --- spf-tools (despf.sh and its sourced includes) ---
-  /usr/bin/spf-tools/              r,
-  /usr/bin/spf-tools/**            r,
-  /usr/bin/spf-tools/despf.sh     ix,
 
   # --- aggregateCIDR.pl (route-summarization) ---
   /usr/bin/aggregateCIDR.pl        r,
@@ -81,9 +79,11 @@
 
   # --- temp files ---
   # postallow uses mktemp /tmp/postallow.XXXXXX (5 files)
-  # despf.sh uses mktemp /tmp/despf-loop-XXXXXXX
+  # despf_run() (ported from despf.sh) uses mktemp /tmp/despf-loop-XXXXXXX
+  # despfit() uses mktemp /tmp/despf-sort-XXXXXXX
   /tmp/postallow.*                rw,
   /tmp/despf-loop-*               rw,
+  /tmp/despf-sort-*               rw,
 
   # --- /proc: needed for show_dots() kill -0 <pid> check ---
   @{PROC}/@{pid}/  r,

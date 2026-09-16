@@ -1,5 +1,29 @@
 # Migrating to Postallow
 
+## From 4.5.x to 4.6.0
+
+As of v4.6.0, spf-tools is no longer an external dependency. SPF-record
+expansion (`despf.sh`) and CIDR normalisation (`normalize.sh`) are built
+directly into the `postallow` script itself.
+
+### Remove the `spftoolspath` setting
+
+The `spftoolspath` option has been removed from `postallow.conf`. If your
+existing config still sets it, the line is now ignored and can simply be
+deleted.
+
+### Remove any manually-installed spf-tools scripts
+
+If you previously installed spf-tools by hand (e.g. via an older
+`contrib/install.sh` or the manual steps that used to be in the README), you
+can remove `despf.sh` and `normalize.sh` from your `spftoolspath` directory
+(typically `/usr/local/bin`):
+
+    rm -f /usr/local/bin/despf.sh /usr/local/bin/normalize.sh
+
+No other package depends on them — route-summarization (`aggregateCIDR.pl`)
+is installed and tracked separately, and is unaffected by this change.
+
 ## From 3.x to 4.0.0
 
 Version 4.0.0 introduces a significant security improvement: Postallow no
@@ -120,8 +144,8 @@ to a manual spf-tools installation:
     sudo rm -rf /usr/local/bin/spf-tools
     sudo rm -rf /usr/local/scripts/spf-tools
 
-Verify with `which postallow` and `which despf.sh` that the package-managed
-versions are found first.
+Verify with `which postallow` that the package-managed version is found
+first.
 
 ### Output directory
 
@@ -152,4 +176,4 @@ which is preserved across upgrades:
 
 Postwhite used `/etc/postwhite.conf`. Create `/etc/postallow/postallow.conf`
 from the installed template (the package does this automatically) and review
-all paths — in particular `spftoolspath` and `output_dir`.
+all paths — in particular `output_dir`.

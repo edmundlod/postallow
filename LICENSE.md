@@ -21,3 +21,13 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+## Third-party code
+
+Portions of `postallow` (SPF parsing/recursion, DNS querying, and CIDR
+normalisation, clearly delimited in the source) are adapted from
+spf-tools, Copyright 2015 spf-tools team (see AUTHORS at
+https://github.com/spf-tools/spf-tools), licensed under the Apache
+License, Version 2.0. See `LICENSES/Apache-2.0.txt` for the full text.
