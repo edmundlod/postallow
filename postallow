@@ -533,7 +533,7 @@ if [ -n "${quick_add_domain}" ]; then
     qa_cleanup() { rm -f "${qa_t1}" "${qa_t2}" "${qa_t3}"; }
 
     printf "Querying SPF records for '%s'...\n" "${quick_add_domain}"
-    "${spftoolspath}"/despf.sh "${quick_add_domain}" | (grep -Ei '^ip' || true) > "${qa_t1}"
+    despf_run "${quick_add_domain}" | (grep -Ei '^ip' || true) > "${qa_t1}"
 
     if [ ! -s "${qa_t1}" ]; then
         printf "No IP entries found in SPF records for '%s'.\n" "${quick_add_domain}" >&2
@@ -544,7 +544,7 @@ if [ -n "${quick_add_domain}" ]; then
 
     printf "Aggregating CIDRs...\n"
     sed '/\./s/\/32//g' "${qa_t1}" | \
-        "${spftoolspath}"/normalize.sh ${_norm_flag} | \
+        normalize_cidrs ${_norm_flag} | \
         sort -u | ${aggregateCIDR} --quiet --spf > "${qa_t2}"
 
     printf "Formatting rules...\n"
@@ -655,16 +655,18 @@ done
 
 # Create host query function
 query_host() {
-	"${spftoolspath}"/despf.sh "$1" | (grep -Ei ^ip || true ) >> "${tmp1}"
+	despf_run "$1" | (grep -Ei ^ip || true ) >> "${tmp1}"
 }
 
 query_block_host() {
-	"${spftoolspath}"/despf.sh "$1" | (grep -Ei ^ip || true ) >> "${blocktmp1}"
+	despf_run "$1" | (grep -Ei ^ip || true ) >> "${blocktmp1}"
 }
 
-# Create Yahoo query function that pulls their SPF records from their own Nameservers
+# Create Yahoo query function that pulls their SPF records from their own Nameservers.
+# DNS_SERVER is scoped to this one subshell so it never affects the other
+# three call sites (despf.inc.sh's parsepf() reads it directly).
 query_yahoo_host() {
-	"${spftoolspath}"/despf.sh -d ns1.yahoo.com "$1" | (grep -Ei ^ip || true ) >> "${tmp1}"
+	( DNS_SERVER="ns1.yahoo.com"; despf_run "$1" ) | (grep -Ei ^ip || true ) >> "${tmp1}"
 }
 
 # Create progress dots function
@@ -735,13 +737,13 @@ if [ x"$enable_blocklist" = x"yes" ] ; then
 fi
 
 printf "\nCIDR and Host summarization...\n"
-# normalize.sh fixes invalid IPv4 CIDRs (non-null host bits) before aggregation;
+# normalize_cidrs fixes invalid IPv4 CIDRs (non-null host bits) before aggregation;
 # aggregateCIDR.pl is from nabbi/route-summarization, packaged at edmundlod/route-summarization
-sed '/\./s/\/32//g' "${tmp1}" | "${spftoolspath}"/normalize.sh ${_norm_flag} | sort -u | ${aggregateCIDR} --quiet --spf > "${tmp2}" &
+sed '/\./s/\/32//g' "${tmp1}" | normalize_cidrs ${_norm_flag} | sort -u | ${aggregateCIDR} --quiet --spf > "${tmp2}" &
 show_dots "$!"
 
 if [ x"$enable_blocklist" = x"yes" ] ; then
-        cat "${blocktmp1}" | "${spftoolspath}"/normalize.sh ${_norm_flag} | sort -u | ${aggregateCIDR} --quiet --spf > "${blocktmp2}" &
+        cat "${blocktmp1}" | normalize_cidrs ${_norm_flag} | sort -u | ${aggregateCIDR} --quiet --spf > "${blocktmp2}" &
         show_dots "$!"
 fi
 
