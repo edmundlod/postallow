@@ -14,9 +14,11 @@ on:
 # Every job follows the same sequence:
 #   1. Install postfix, DNS tools, Perl + CIDR modules, and git.
 #   2. Run contrib/install.sh as root — creates the postallow user and output
-#      directory, and installs aggregateCIDR.pl (SPF parsing/DNS querying is
-#      built into postallow itself as of v4.6.0, no separate install needed).
-#   3. Install the postallow script + config + host list + static Yahoo data.
+#      directory (SPF parsing/DNS querying is built into postallow itself as
+#      of v4.6.0, no separate install needed).
+#   3. Install the postallow script, the vendored aggregateCIDR.pl (from
+#      contrib/, as of v4.6.0 no separate fetch needed), config, host list,
+#      and static Yahoo data.
 #   4. Write a minimal postallow.conf pointing at the correct paths.
 #   5. Configure postfix (loopback-only listener; file-based logging for containers).
 #   6. Start postfix.
@@ -65,16 +67,18 @@ jobs:
       - name: Install postallow script, host list, and static data
         run: |
           sudo install -m 755 postallow /usr/local/bin/postallow
+          sudo install -m 755 contrib/aggregateCIDR.pl /usr/local/bin/aggregateCIDR.pl
           sudo install -d -m 755 /etc/postallow
           sudo install -m 644 conf/allowlist_hosts /etc/postallow/allowlist_hosts
           sudo install -d -m 755 /usr/local/share/postallow
           sudo install -m 644 yahoo_static_hosts.txt \
             /usr/local/share/postallow/yahoo_static_hosts.txt
- 
+
       - name: Write postallow.conf
         run: |
           cat > /tmp/postallow.conf <<'EOF'
           allowlist_hosts=/etc/postallow/allowlist_hosts
+          aggregatecidrpath=/usr/local/bin
           postfixpath=/var/lib/postallow
           allowlist=postscreen_spf_allowlist.cidr
           blocklist=postscreen_spf_blocklist.cidr
@@ -140,6 +144,7 @@ jobs:
       - name: Install postallow script, host list, and static data
         run: |
           install -m 755 postallow /usr/local/bin/postallow
+          install -m 755 contrib/aggregateCIDR.pl /usr/local/bin/aggregateCIDR.pl
           install -d -m 755 /etc/postallow
           install -m 644 conf/allowlist_hosts /etc/postallow/allowlist_hosts
           install -d -m 755 /usr/local/share/postallow
@@ -150,6 +155,7 @@ jobs:
         run: |
           cat > /etc/postallow/postallow.conf <<'EOF'
           allowlist_hosts=/etc/postallow/allowlist_hosts
+          aggregatecidrpath=/usr/local/bin
           postfixpath=/var/lib/postallow
           allowlist=postscreen_spf_allowlist.cidr
           blocklist=postscreen_spf_blocklist.cidr
@@ -215,6 +221,7 @@ jobs:
       - name: Install postallow script, host list, and static data
         run: |
           install -m 755 postallow /usr/local/bin/postallow
+          install -m 755 contrib/aggregateCIDR.pl /usr/local/bin/aggregateCIDR.pl
           install -d -m 755 /etc/postallow
           install -m 644 conf/allowlist_hosts /etc/postallow/allowlist_hosts
           install -d -m 755 /usr/local/share/postallow
@@ -225,6 +232,7 @@ jobs:
         run: |
           cat > /etc/postallow/postallow.conf <<'EOF'
           allowlist_hosts=/etc/postallow/allowlist_hosts
+          aggregatecidrpath=/usr/local/bin
           postfixpath=/var/lib/postallow
           allowlist=postscreen_spf_allowlist.cidr
           blocklist=postscreen_spf_blocklist.cidr
@@ -286,6 +294,7 @@ jobs:
       - name: Install postallow script, host list, and static data
         run: |
           install -m 755 postallow /usr/local/bin/postallow
+          install -m 755 contrib/aggregateCIDR.pl /usr/local/bin/aggregateCIDR.pl
           install -d -m 755 /etc/postallow
           install -m 644 conf/allowlist_hosts /etc/postallow/allowlist_hosts
           install -d -m 755 /usr/local/share/postallow
@@ -296,6 +305,7 @@ jobs:
         run: |
           cat > /etc/postallow/postallow.conf <<'EOF'
           allowlist_hosts=/etc/postallow/allowlist_hosts
+          aggregatecidrpath=/usr/local/bin
           postfixpath=/var/lib/postallow
           allowlist=postscreen_spf_allowlist.cidr
           blocklist=postscreen_spf_blocklist.cidr
@@ -374,12 +384,13 @@ jobs:
             
             # --- Set up postallow user, data directory, and dependencies ---
             # contrib/install.sh detects FreeBSD via uname and uses pw(8).
-            # It also installs aggregateCIDR.pl (SPF parsing/DNS querying is
-            # built into postallow itself as of v4.6.0).
+            # SPF parsing/DNS querying is built into postallow itself as of
+            # v4.6.0; aggregateCIDR.pl is vendored and installed below.
             sh contrib/install.sh
 
             # --- Install postallow script, host list, and static data ---
             install -m 755 postallow /usr/local/bin/postallow
+            install -m 755 contrib/aggregateCIDR.pl /usr/local/bin/aggregateCIDR.pl
             install -d -m 755 /usr/local/etc/postallow
             install -m 644 conf/allowlist_hosts \
               /usr/local/etc/postallow/allowlist_hosts
@@ -390,6 +401,7 @@ jobs:
             # --- Write postallow.conf (FreeBSD paths) ---
             cat > /usr/local/etc/postallow/postallow.conf <<'CONF'
             allowlist_hosts=/usr/local/etc/postallow/allowlist_hosts
+            aggregatecidrpath=/usr/local/bin
             postfixpath=/var/db/postallow
             allowlist=postscreen_spf_allowlist.cidr
             blocklist=postscreen_spf_blocklist.cidr

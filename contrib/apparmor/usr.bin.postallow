@@ -57,7 +57,7 @@
   network inet6 stream,
   network unix  stream,   # systemd-resolved stub socket
 
-  # --- aggregateCIDR.pl (route-summarization) ---
+  # --- aggregateCIDR.pl (vendored from route-summarization, installed via 'make install') ---
   /usr/bin/aggregateCIDR.pl        r,
   /usr/bin/perl                   ix,
   /usr/lib/perl{,5}/              r,

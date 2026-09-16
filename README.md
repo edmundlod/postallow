@@ -21,7 +21,7 @@ A script for generating a Postscreen allowlist (and optionally a blocklist) base
 - [Installation](#installation)
   - [via dnf (AlmaLinux 10 / RHEL 10 / Fedora / OpenSUSE)](#via-dnf-almalinux-10--rhel-10--fedora--opensuse)
   - [Manual installation](#manual-installation)
-    - [1. Create the postallow user, output directory, and install dependencies](#1-create-the-postallow-user-output-directory-and-install-dependencies)
+    - [1. Create the postallow user and output directory](#1-create-the-postallow-user-and-output-directory)
     - [2. Install Postallow](#2-install-postallow)
   - [Configure Postallow](#configure-postallow)
   - [Configure Postfix](#configure-postfix)
@@ -58,11 +58,13 @@ querying (originally from the <a target="_blank"
 href="https://github.com/spf-tools/spf-tools">spf-tools</a> project) are
 built directly into `postallow` as of v4.6.0 — no external install needed.
 
+CIDR aggregation uses a vendored copy of `aggregateCIDR.pl` from the <a target="_blank"
+href="https://github.com/nabbi/route-summarization">route-summarization</a> project (see `contrib/aggregateCIDR.pl`), installed automatically alongside `postallow` — no separate fetch needed.
+
 In order to run `postallow` you will need:
 
 * A shell
-* Perl 5+
-* [route-summarization](https://github.com/edmundlod/route-summarization) (for CIDR aggregation)
+* Perl 5+ with the `Net::CIDR::Lite` module (used by the vendored `aggregateCIDR.pl`)
 
 Postallow also assumes that you have **Postfix** and the appropriate **bind-utils** package for your Linux / Unix(-y) system installed on your system.
 
@@ -123,16 +125,15 @@ A package is available in the `AUR`. The `PKGBUILD`, `sysusers`, and `tmpfiles` 
 
 Install requirements:
 
-* `git` — to fetch route-summarization
 * `make` — to run `make install`
 
-### 1. Create the postallow user, output directory, and install dependencies
+### 1. Create the postallow user and output directory
 
 A helper script is provided for common platforms:
 
     sudo contrib/install.sh
 
-This creates the `postallow` system user and the output directory with correct ownership, and installs [aggregateCIDR.pl](https://github.com/edmundlod/route-summarization) into `/usr/local/bin/`. OS packagers should handle all of this in their own package lifecycle hooks instead.
+This creates the `postallow` system user and the output directory with correct ownership. OS packagers should handle all of this in their own package lifecycle hooks instead.
 
 If you prefer to do it manually, or are on an unsupported platform, perform each step in turn:
 
@@ -155,15 +156,12 @@ If you prefer to do it manually, or are on an unsupported platform, perform each
 
     install -d -o postallow -m 755 /var/lib/postallow   # adjust path for your platform
 
-**Install aggregateCIDR.pl:**
-
-    git clone --depth=1 https://github.com/edmundlod/route-summarization /tmp/route-summarization
-    install -m 755 /tmp/route-summarization/aggregateCIDR.pl /usr/local/bin/aggregateCIDR.pl
-    rm -rf /tmp/route-summarization
-
 ### 2. Install Postallow
 
     make install
+
+This also installs the vendored `contrib/aggregateCIDR.pl` (used for CIDR
+aggregation) alongside `postallow` — no separate fetch needed.
 
 The default prefix is `/usr/local`. Common overrides:
 
@@ -303,6 +301,7 @@ Other options in ```postallow.conf``` include changing the filenames for your al
 By the original author:
 * Special thanks to Mike Miller for his 2013 <a target="_blank" href="https://archive.mgm51.com/sources/gallowlist.html">gallowlist script</a> that initially got me tinkering with SPF-based Postscreen allowlists. The temp file creation and ```printf``` statement near the end of the Postallow script are remnants of his original script.
 * Thanks to Jan Sarenik and the spf-tools team (<a target="_blank" href="https://github.com/spf-tools/spf-tools">spf-tools</a>), whose SPF-parsing and DNS-query code is incorporated directly into Postallow as of v4.6.0.
+* Thanks to Nic Boet (`nabbi`) for <a target="_blank" href="https://github.com/nabbi/route-summarization">route-summarization</a>'s `aggregateCIDR.pl`, vendored into Postallow as of v4.6.0 for CIDR aggregation.
 * Thanks to <a target="_blank" href="https://github.com/jcbf">Jose Borges Ferreira</a> for patches and contributions to Postallow, include internal code to validate CIDRs.
 * Thanks to <a target="_blank" href="https://github.com/corrideat">Ricardo Iván Vieitez Parra</a> for contributions to Postallow, including external config file support, normalization improvements, error handling, and additional modifications that allow Postallow to run on additional systems.
 * Thanks to partner (business... not life) <a target="_blank" href="http://stevecook.net/">Steve Cook</a> for helping me cludge through Bash scripting, and for writing the initial version of the ```scrape_yahoo``` script.

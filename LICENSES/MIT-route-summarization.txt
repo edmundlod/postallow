@@ -1,8 +1,6 @@
 MIT License
 
-Copyright (c) 2017 Jenkins Holdings LLC  -- up to version 3.4 (Original author)
-
-Copyright (c) 2025 Edmund Lodewijks -- from version 3.5.0
+Copyright (c) 2021-2026 Nic Boet
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -24,15 +22,16 @@ SOFTWARE.
 
 ---
 
-## Third-party code
+This project's initial control-flow concept (read CIDR/IP lines from STDIN,
+aggregate via Net::CIDR::Lite, print the result) was inspired by a script
+published by Adrian Popa at:
+http://adrianpopagh.blogspot.com/2008/03/route-summarization-script.html
 
-Portions of `postallow` (SPF parsing/recursion, DNS querying, and CIDR
-normalisation, clearly delimited in the source) are adapted from
-spf-tools, Copyright 2015 spf-tools team (see AUTHORS at
-https://github.com/spf-tools/spf-tools), licensed under the Apache
-License, Version 2.0. See `LICENSES/Apache-2.0.txt` for the full text.
-
-`contrib/aggregateCIDR.pl` is vendored from route-summarization, Copyright
-(c) 2021-2026 Nic Boet (https://github.com/nabbi/route-summarization),
-licensed under the MIT License. See `LICENSES/MIT-route-summarization.txt`
-for the full text.
+That original work carries no explicit license or copyright notice, but
+copyright in it is, by default, held by its author, Adrian Popa, regardless
+of the absence of a notice. No rights to that original work are granted,
+implied, sublicensed, or claimed by this repository or the license above
+beyond the attribution here. All validation logic, IPv4/IPv6 handling, SPF
+support, CLI options, and other functionality in this repository were
+written independently by the copyright holder named at the top of this
+file.

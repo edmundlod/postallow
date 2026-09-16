@@ -52,6 +52,18 @@ and
 .B HOST LIST FILE
 below).
 .TP
+.BI aggregatecidrpath= path
+Directory containing
+.BR aggregateCIDR.pl (1),
+vendored from the
+.B route-summarization
+project and installed alongside
+.B postallow
+by
+.BR make (1) install .
+Default:
+.IR /usr/local/bin .
+.TP
 .BI output_dir= path
 Directory to which
 .B postallow
@@ -153,6 +165,7 @@ custom_hosts="example.com mycompany.org"
 
 allowlist_hosts=/usr/share/postallow/allowlist_hosts
 custom_hosts_file=/etc/postallow/custom_hosts
+aggregatecidrpath=/usr/local/bin
 output_dir=/var/lib/postallow
 
 include_yahoo="no"
