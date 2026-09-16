@@ -1,11 +1,21 @@
 name: Dispatch packaging branches
 
-# Runs when a release is tagged on main. Rebases the rpm branch (which
+# Runs when a release is tagged on main. Rebuilds the rpm branch (which
 # carries contrib/rpm/postallow.spec and build-rpm.yml — see
-# docs/superpowers/specs/2026-09-15-drop-debian-split-rpm-branch.md) onto
-# the new tag and syncs its own version file, then pushes. That push is
-# what triggers build-rpm.yml; it no longer triggers on tag push directly,
-# since a tag name can only point at one commit and main already owns it.
+# docs/superpowers/specs/2026-09-15-drop-debian-split-rpm-branch.md) from
+# the new tag's tree, with the RPM-only files restored on top, syncs the
+# spec's version, and force-pushes. That push is what triggers
+# build-rpm.yml; it no longer triggers on tag push directly, since a tag
+# name can only point at one commit and main already owns it.
+#
+# This overlays rather than rebases: main permanently deletes
+# contrib/rpm/ and build-rpm.yml (RPM packaging lives only on this
+# branch), so `git rebase <tag>` either silently drops files that predate
+# the branch point (rebase only replays commits unique to rpm, and
+# postallow.spec's *existence* isn't one of them) or hard-conflicts on
+# files rpm's own commits modify (modify/delete against main's deletion).
+# Resetting the tree to the tag and re-adding the RPM-only files from
+# rpm's current state avoids both failure modes and is idempotent.
 
 on:
   push:
@@ -28,20 +38,23 @@ jobs:
         id: version
         run: echo "version=$(echo '${{ github.ref_name }}' | sed 's/^v//')" >> $GITHUB_OUTPUT
 
-      - name: Rebase rpm onto the new tag
+      - name: Rebuild rpm from the new tag, restoring RPM-only files
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git rebase "${{ github.ref_name }}"
+          rpm_files="contrib/rpm .github/workflows/build-rpm.yml"
+          git checkout -B rpm "${{ github.ref_name }}"
+          git checkout "origin/rpm" -- $rpm_files
+          git add $rpm_files
 
       - name: Sync contrib/rpm/postallow.spec version
         run: |
           sed -i \
             "s/^%{!?pkg_version: %global pkg_version .*}$/%{!?pkg_version: %global pkg_version ${{ steps.version.outputs.version }}}/" \
             contrib/rpm/postallow.spec
-          if ! git diff --quiet; then
-            git commit -am "release: sync to ${{ github.ref_name }}"
-          fi
+          git add contrib/rpm/postallow.spec
 
-      - name: Push rpm
-        run: git push --force-with-lease origin rpm
+      - name: Commit and push rpm
+        run: |
+          git commit -m "release: sync rpm branch to ${{ github.ref_name }}"
+          git push --force-with-lease origin rpm
