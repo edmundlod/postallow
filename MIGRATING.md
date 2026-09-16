@@ -2,19 +2,41 @@
 
 ## From 4.5.x to 4.6.0
 
-As of v4.6.0, `aggregateCIDR.pl` is vendored directly in the postallow
+As of v4.6.0, neither spf-tools nor route-summarization is an external
+dependency anymore. SPF-record expansion (`despf.sh`) and CIDR
+normalisation (`normalize.sh`) are built directly into the `postallow`
+script itself; `aggregateCIDR.pl` is vendored directly in the postallow
 repo/package (`contrib/aggregateCIDR.pl`) instead of being fetched
-separately from the [route-summarization](https://github.com/nabbi/route-summarization)
-project. `postallow` no longer searches `PATH` for it; it now reads a fixed
-path from the new `aggregatecidrpath` setting in `postallow.conf` (default
-`/usr/local/bin`, matching the previous manual-install location).
+separately from [route-summarization](https://github.com/nabbi/route-summarization).
+
+### Remove the `spftoolspath` setting
+
+The `spftoolspath` option has been removed from `postallow.conf`. If your
+existing config still sets it, the line is now ignored and can simply be
+deleted.
+
+### Remove any manually-installed spf-tools scripts
+
+If you previously installed spf-tools by hand (e.g. via an older
+`contrib/install.sh` or the manual steps that used to be in the README), you
+can remove `despf.sh` and `normalize.sh` from your `spftoolspath` directory
+(typically `/usr/local/bin`):
+
+    rm -f /usr/local/bin/despf.sh /usr/local/bin/normalize.sh
+
+### `aggregateCIDR.pl` now resolves via `aggregatecidrpath`, not `PATH`
+
+`postallow` no longer searches `PATH` for `aggregateCIDR.pl`; it now reads
+a fixed path from the new `aggregatecidrpath` setting in `postallow.conf`
+(default `/usr/local/bin`, matching the previous manual-install location).
 
 If you previously installed `aggregateCIDR.pl` to a location other than
 `/usr/local/bin` and don't regenerate `postallow.conf`, set
 `aggregatecidrpath` explicitly to that directory. Otherwise, `make install`
 installs the vendored copy alongside `postallow` and no action is needed.
-`contrib/install.sh` no longer installs `aggregateCIDR.pl` — that step moved
-to `make install`.
+`contrib/install.sh` no longer installs either dependency — both steps
+moved to `make install` (route-summarization) or were removed entirely
+(spf-tools, now built in).
 
 ## From 3.x to 4.0.0
 
@@ -136,8 +158,8 @@ to a manual spf-tools installation:
     sudo rm -rf /usr/local/bin/spf-tools
     sudo rm -rf /usr/local/scripts/spf-tools
 
-Verify with `which postallow` and `which despf.sh` that the package-managed
-versions are found first.
+Verify with `which postallow` that the package-managed version is found
+first.
 
 ### Output directory
 
@@ -168,4 +190,4 @@ which is preserved across upgrades:
 
 Postwhite used `/etc/postwhite.conf`. Create `/etc/postallow/postallow.conf`
 from the installed template (the package does this automatically) and review
-all paths — in particular `spftoolspath` and `output_dir`.
+all paths — in particular `output_dir`.

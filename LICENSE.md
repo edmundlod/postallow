@@ -26,6 +26,12 @@ SOFTWARE.
 
 ## Third-party code
 
+Portions of `postallow` (SPF parsing/recursion, DNS querying, and CIDR
+normalisation, clearly delimited in the source) are adapted from
+spf-tools, Copyright 2015 spf-tools team (see AUTHORS at
+https://github.com/spf-tools/spf-tools), licensed under the Apache
+License, Version 2.0. See `LICENSES/Apache-2.0.txt` for the full text.
+
 `contrib/aggregateCIDR.pl` is vendored from route-summarization, Copyright
 (c) 2021-2026 Nic Boet (https://github.com/nabbi/route-summarization),
 licensed under the MIT License. See `LICENSES/MIT-route-summarization.txt`

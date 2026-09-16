@@ -15,9 +15,6 @@ lastupdated="2026-05-27"
 #	 3) Run /usr/local/scripts/postallow
 # Optional config file passed via command line overrides the default config file location.
 #
-# Requires SPF-Tools (https://github.com/edmundlod/spf-tools)
-# Please update your copy of spf-tools whenever you update Postallow
-#
 # Thanks to `nabbi` for Perl CIDR integration.
 # Thanks to Steve Jenkins (https://www.stevejenkins.com/) for the orignal version
 #           (called Postwhite).
@@ -119,7 +116,7 @@ if [ ! -x "${aggregateCIDR}" ]; then
 fi
 
 # Format an already-normalized ip4:/ip6: entry for the output file.
-# Invalid CIDRs are handled upstream by normalize.sh before aggregation.
+# Invalid CIDRs are handled upstream by normalize_cidrs before aggregation.
 format_ip() {
 	format_ip_iptype="$( echo "$1" | cut -d\: -f1 )"
 	format_ip_ip="$( echo "$1" | cut -d\: -f2- )"
@@ -137,6 +134,390 @@ case "${invalid_cidr}" in
     remove) _norm_flag="-i" ;;
     *)      _norm_flag="" ;;
 esac
+
+# ---------------------------------------------------------------------------
+# The following SPF-parsing/recursion and DNS-query functions (through the
+# "end of ported spf-tools code" marker below) are adapted verbatim from
+# spf-tools, Copyright 2015 spf-tools team (see AUTHORS at
+# https://github.com/spf-tools/spf-tools), licensed under the Apache
+# License, Version 2.0 (see LICENSES/Apache-2.0.txt). Changes made: none to
+# the function bodies themselves; despf_run() below is new integration glue
+# (not part of upstream spf-tools) replacing the loopfile-provisioning that
+# despf.sh's own wrapper script used to do.
+# ---------------------------------------------------------------------------
+
+myhost() {
+  host -W "$DNS_TIMEOUT" "$@" || { host -W "$DNS_TIMEOUT" "$@" 1>&2; exit 1; }
+}
+
+get_txt() {
+  myhost -t TXT "$@" | cut -d\" -f2- | sed -e 's/\" \"//g;s/\"$//'
+}
+
+get_mx() {
+  myhost -t MX "$@" | awk '/mail is handled/ {print $NF}'
+}
+
+get_addr() {
+  myhost -t "$@" | awk '/alias/ {print $NF} /address/ {print $NF}'
+}
+
+get_ns() {
+  myhost -t NS "$@" | awk '/name server/ {print $NF}'
+}
+
+# findns <domain>
+# Find an authoritative NS server for domain
+findns() {
+  dd="$1"; ns="";
+  while test -z "$ns"
+  do
+    if
+      ns=$(get_ns "$dd" | grep .)
+    then
+      break
+    else
+      echo "$dd" | grep -q '\.' && { dd="${dd#*.}"; unset ns; } || break
+    fi
+  done
+  echo "$ns" | grep '^[^;]'
+}
+
+# printip <<EOF
+# 1.2.3.4
+# fec0::1
+# EOF
+# ip4:1.2.3.4
+# ip6:fec0::1
+printip() {
+  while read line
+  do
+    # Dont take the + . It's default
+    qualifier=$(echo $line | grep -Eio "^[~?-]")
+    line=$(echo $line | sed -e 's/[\~\?\+\-]//')
+    prefix=/${1:-"${line##*/}"}
+    test -n "$1" || echo $line | grep -q '/' || prefix=""
+    line=$(echo $line | cut -d/ -f1)
+    if echo $line | grep -q ':'; then ver=6
+      checkval6 $line $prefix || continue
+    elif echo $line | grep -q '\.'; then ver=4
+      checkval4 $line $prefix || continue
+    else
+      continue
+    fi
+    echo "${qualifier}ip${ver}:${line}${prefix}"
+  done
+}
+
+# dea <hostname> <cidr> <qualifier>
+# dea both.spf-tools.eu.org
+# 1.2.3.4
+# fec0::1
+dea() {
+  for TYPE in A AAAA; do
+	  get_addr $TYPE $1 | while read ip ; do 
+	  	addr="${3}${ip}"
+	  	echo $addr | printip $2;
+  	  done
+  done
+  true
+}
+
+# demx <domain> <cidr> <qualifier>
+# Get MX record for a domain
+demx() {
+  mymx=$(get_mx $1)
+  for name in $mymx; do dea $name "$2" $3; done
+}
+
+# parsepf <host>
+parsepf() {
+  host=$1
+  if
+    test -n "$USE_UPSTREAM"
+  then
+    myns=$(findns $host 2>/dev/null)
+  else
+    if
+      test $DNS_SERVER
+    then
+      myns=$DNS_SERVER
+    else
+      #myns=$(sed -E -n 's/^nameserver[[:space:]]+([.:[:xdigit:]]]+)/\1/p' /etc/resolv.conf)
+      # [ SP TAB ]
+      myns=$(sed -n 's/^nameserver[ 	]//p' /etc/resolv.conf)
+    fi
+  fi
+  for ns in $myns
+  do
+    get_txt $host $ns 2>/dev/null \
+      | grep -Eio 'v=spf1 [^"]+' && break
+  done
+}
+
+# in_list item list
+# e.g _spf.google.com  salesforce.com:google.com:outlook.com
+in_list() {
+  test $# -eq 2 && echo $2 | grep -wq $1
+}
+
+# has_macro item
+# e.g %{i}.domain.com
+has_macro() {
+  echo $1 | grep '%{' > /dev/null
+}
+
+# getem <includes>
+# e.g. includes="include:gnu.org include:google.com"
+getem() {
+  myloop=$1
+  shift
+  echo $* | tr " " "\n" | sed '/^$/d' | cut -b 9- | while read included
+  do
+    if
+      in_list "$included" "$DESPF_SKIP_DOMAINS"
+    then
+      echo "Skipping $included" 1>&2;
+      echo "include:$included"
+    elif
+      has_macro "$included"
+    then
+      echo "Skipping (has macros) $included" 1>&2;
+      echo "include:$included"
+    else
+      echo Getting $included 1>&2;
+      despf $included $myloop
+    fi
+  done
+}
+
+# getamx host mech [mech [...]]
+# e.g. host="spf-tools.eu.org"
+# e.g. mech="a a:gnu.org a:google.com/24 mx:gnu.org mx:spf-tools.eu.org/24"
+getamx() {
+  local cidr ahost
+  host=$1
+  shift
+  for record in $* ; do 
+    cidr=$(echo $record | cut -s -d\/ -f2-)
+    ahost=$(echo $record | cut -s -d: -f2-)
+    if [ "x" = "x$ahost" ] ; then
+      lookuphost="$host";
+      mech=$(echo $record | cut -d/ -f1)
+    else
+      # try to catch "a/24", "a",  "a:host.tld/24" and "a:host.tld"
+      mech=$(echo $record | cut -d: -f1 | cut -d/ -f1)
+      if [ "x" = "x$cidr" ] ; then
+        lookuphost=$ahost
+      else
+        lookuphost=$(echo $ahost | cut -d\/ -f1)
+      fi
+    fi
+    qualifier=$(echo $mech | grep -Eio "^[~?+-]")
+    mech=$(echo $mech | sed -e 's/[\~\?\+\-]//'| tr '[A-Z]' '[a-z]')
+    if [ "$mech" = "a" ]; then
+      dea $lookuphost "$cidr" $qualifier
+    elif [ "$mech" = "mx" ]; then
+      demx $lookuphost "$cidr" $qualifier
+    fi
+  done
+}
+
+# despf <domain>
+despf() {
+  host=$1
+  myloop=$2
+
+  # Detect loop
+  echo $host | grep -qxFf $myloop && {
+    #echo "Loop detected with $host!" 1>&2
+    return
+  }
+
+  echo "$host" >> "${myloop}"
+  myspf=$(parsepf $host | sed 's/redirect=/include:/')
+
+  set +e
+  dogetem=$(echo $myspf | grep -Eio 'include:[^[:blank:]]+') \
+    && getem $myloop $dogetem
+  dogetamx=$(echo $myspf | grep -Eio -w '[?~+-]?(mx|a)((/|:)[^[:blank:]]+)?')  \
+    && getamx $host $dogetamx
+  echo $myspf | grep -Eio '[?~+-]?ip[46]:[^[:blank:]]+' | sed -e 's/ip[46]\://' | printip
+  echo $myspf | grep -Eio '([?~+-]?exists|ptr):[^[:blank:]]+'
+  set -e
+}
+
+cleanup() {
+  myloop=$1
+  test -n "$myloop" && rm ${myloop}*
+}
+
+despfit() {
+  hosts="$1"
+  myloop=$2
+
+  # Make sort(1) behave
+  export LC_ALL=C
+  export LANG=C
+ 
+  outputfile=$(mktemp /tmp/despf-sort-XXXXXXX)
+  for host in $hosts
+  do
+    despf $host $myloop
+  done  > $outputfile
+  if grep -E '^[?~-]' $outputfile  ; then
+	  cat $outputfile
+  else
+	  sort -u $outputfile
+  fi
+  rm $outputfile
+}
+
+checkval4() {
+  ip=$1
+  cidr=${2#/}
+  test -n "$cidr" && { numlesseq $cidr 32 || return 1; }
+
+  D=$(echo $ip | grep -Eo '\.' | wc -l)
+  test $D -eq 3 || return 1
+  for i in $(echo $ip | tr '.' ' ')
+  do
+    numlesseq $i 255 || return 1
+  done
+}
+
+numlesseq() {
+  num=${1:-1}
+  less=${2:-255}
+  echo "$num" | tr -d '[0-9]' | grep -q '^$' || return 1
+  test $num -le $less || return 1
+}
+
+checkval6() {
+  myip=$(expand6 $1) || return 1
+  cidr=${2#/}
+  test -n "$cidr" && { numlesseq $cidr 128 || return 1; }
+
+  for i in $(echo $myip | tr ':' ' ')
+  do
+    C=$(echo $i | wc -c)
+    # echo prints a newline --> 5 including \n
+    test $C -le 5 || return 1
+    echo "$i" | tr -d '[0-9a-fA-F]' | grep -q '^$' || return 1
+  done
+}
+
+expand6() {
+  D=$(echo $1 | grep -Eo ':' | wc -l)
+  if
+    test $D -eq 7
+  then
+    echo $1
+  elif
+    test $D -le 7 && echo $1 | grep -q '::'
+  then
+    C=$(echo $1 | grep -Eo '::' | wc -l)
+    test $C -gt 1 && return 1
+    add=""
+    for a in $(awk -v MYEND=$((8-$D)) 'BEGIN { for(i=1;i<=MYEND;i++) print i }')
+    do
+      add=${add}:0000
+    done
+    out=$(echo $1 | sed "s/::/${add}:/;s/^:/0000:/;s/:$/:0000/")
+    out=$(echo $out | sed -E 's/:([0-9]{1})$/:000\1/')
+    out=$(echo $out | sed -E 's/:([0-9]{2})$/:00\1/')
+    out=$(echo $out | sed -E 's/:([0-9]{3})$/:0\1/')
+    echo $out
+  else
+    return 1
+  fi
+}
+
+# despf_run <domain> — new integration glue, not part of upstream spf-tools.
+# despf.sh's own wrapper script (not ported here) used to create the
+# loop-detection tempfile, seed it, call despfit, then clean up. despfit()
+# requires that tempfile as an argument but doesn't create it itself, so
+# something has to — this replaces despf.sh's wrapper for that one job.
+# .spf-toolsrc sourcing is deliberately done here rather than at top level:
+# despf_run() always runs in a subshell (as a pipeline component), so
+# confining it here keeps a user-supplied rc file from being able to
+# override postallow's own config variables (output_dir, allowlist, etc.)
+# — this is a documented, deliberate deviation from a purely mechanical
+# verbatim port.
+despf_run() {
+  SPFTRC=${SPFTRC:-"$HOME/.spf-toolsrc"}
+  test -r "$SPFTRC" && . "$SPFTRC"
+
+  DNS_TIMEOUT=${DNS_TIMEOUT:-"2"}
+
+  _dr_loopfile="$(mktemp -q /tmp/despf-loop-XXXXXXX)" || return 1
+  echo random-non-match-tdaoeinthaonetuhanotehu > "${_dr_loopfile}"
+  despfit "$1" "${_dr_loopfile}"
+  cleanup "${_dr_loopfile}"
+}
+
+# end of ported spf-tools code
+
+# ---------------------------------------------------------------------------
+# normalize_cidrs() below is adapted verbatim (as a function instead of a
+# standalone script) from spf-tools' normalize.sh, Copyright 2015 spf-tools
+# team (see AUTHORS at https://github.com/spf-tools/spf-tools), licensed
+# under the Apache License, Version 2.0 (see LICENSES/Apache-2.0.txt).
+# Changes made: wrapped in a function taking the same "-i" flag as $1
+# instead of being a standalone script; no logic changes.
+# ---------------------------------------------------------------------------
+
+normalize_cidrs() {
+  test "$1" = "-i" && ignore=1
+
+  ip2int() {
+    local a b c d
+    echo $1 | while IFS="." read a b c d ; do
+      echo $(((((((a << 8) | b) << 8) | c) << 8) | d))
+    done
+  }
+
+  int2ip() {
+    local ui32=$1; shift
+    local ip n
+    for n in 1 2 3 4; do
+      ip=$((ui32 & 0xff))${ip:+.}$ip
+      ui32=$((ui32 >> 8))
+    done
+    echo $ip
+  }
+
+  network() {
+    local ia netmask
+    echo $1 | while  IFS="/" read ia netmask; do
+      local addr=$(ip2int $ia);
+      local mask=$((0xffffffff << (32 -$netmask)));
+      echo $(int2ip $((addr & mask)))/$netmask
+    done
+  }
+
+  while
+    read i
+  do
+    cidr=$(echo $i | cut -d: -f2-)
+    ipver=$(echo $i | cut -d: -f1)
+    if [ "x$ipver" = "xip4" ] ; then
+      # check if is a CIDR
+      nm=$(echo $i | cut -s -d/ -f2)
+      if [ "x$nm" = "x32" ] ; then
+        echo $i
+      elif [ "x$nm" = "x" ] ; then
+        echo $i
+      else
+        result="ip4:$(network $cidr)"
+        test -n "$ignore" || { echo $result; continue; }
+        test "$result" = "$i" && echo $i || true
+      fi
+    else
+      echo $i
+    fi
+  done
+}
 
 # ---------------------------------------------------------------------------
 # --quick-add: resolve a single domain and append its IPs to the allowlist,
@@ -159,7 +540,7 @@ if [ -n "${quick_add_domain}" ]; then
     qa_cleanup() { rm -f "${qa_t1}" "${qa_t2}" "${qa_t3}"; }
 
     printf "Querying SPF records for '%s'...\n" "${quick_add_domain}"
-    "${spftoolspath}"/despf.sh "${quick_add_domain}" | (grep -Ei '^ip' || true) > "${qa_t1}"
+    despf_run "${quick_add_domain}" | (grep -Ei '^ip' || true) > "${qa_t1}"
 
     if [ ! -s "${qa_t1}" ]; then
         printf "No IP entries found in SPF records for '%s'.\n" "${quick_add_domain}" >&2
@@ -170,7 +551,7 @@ if [ -n "${quick_add_domain}" ]; then
 
     printf "Aggregating CIDRs...\n"
     sed '/\./s/\/32//g' "${qa_t1}" | \
-        "${spftoolspath}"/normalize.sh ${_norm_flag} | \
+        normalize_cidrs ${_norm_flag} | \
         sort -u | ${aggregateCIDR} --quiet --spf > "${qa_t2}"
 
     printf "Formatting rules...\n"
@@ -243,7 +624,7 @@ if [ -n "${custom_hosts_file:-}" ] && [ -f "$custom_hosts_file" ]; then
 fi
 
 # Remove temp files
-cleanup() {
+cleanup_tmpfiles() {
 	test -e "${tmp1}" && rm "${tmp1}"
 	test -e "${tmp2}" && rm "${tmp2}"
 	test -e "${tmp3}" && rm "${tmp3}"
@@ -271,7 +652,7 @@ for p in $tmpPrefix; do
 		t="$(mktemp -q /tmp/"${tmpBase}".XXXXXX)"
 		if [ $? -ne 0 ]; then
 			>&2 printf "%s: Can't create temp files, exiting...\n" "$0"
-			cleanup
+			cleanup_tmpfiles
 			exit 1
 		fi
 		eval ${p}${i}="$t"
@@ -281,16 +662,18 @@ done
 
 # Create host query function
 query_host() {
-	"${spftoolspath}"/despf.sh "$1" | (grep -Ei ^ip || true ) >> "${tmp1}"
+	despf_run "$1" | (grep -Ei ^ip || true ) >> "${tmp1}"
 }
 
 query_block_host() {
-	"${spftoolspath}"/despf.sh "$1" | (grep -Ei ^ip || true ) >> "${blocktmp1}"
+	despf_run "$1" | (grep -Ei ^ip || true ) >> "${blocktmp1}"
 }
 
-# Create Yahoo query function that pulls their SPF records from their own Nameservers
+# Create Yahoo query function that pulls their SPF records from their own Nameservers.
+# DNS_SERVER is scoped to this one subshell so it never affects the other
+# three call sites (despf.inc.sh's parsepf() reads it directly).
 query_yahoo_host() {
-	"${spftoolspath}"/despf.sh -d ns1.yahoo.com "$1" | (grep -Ei ^ip || true ) >> "${tmp1}"
+	( DNS_SERVER="ns1.yahoo.com"; despf_run "$1" ) | (grep -Ei ^ip || true ) >> "${tmp1}"
 }
 
 # Create progress dots function
@@ -361,13 +744,13 @@ if [ x"$enable_blocklist" = x"yes" ] ; then
 fi
 
 printf "\nCIDR and Host summarization...\n"
-# normalize.sh fixes invalid IPv4 CIDRs (non-null host bits) before aggregation;
+# normalize_cidrs fixes invalid IPv4 CIDRs (non-null host bits) before aggregation;
 # aggregateCIDR.pl is vendored from nabbi/route-summarization (see contrib/aggregateCIDR.pl)
-sed '/\./s/\/32//g' "${tmp1}" | "${spftoolspath}"/normalize.sh ${_norm_flag} | sort -u | ${aggregateCIDR} --quiet --spf > "${tmp2}" &
+sed '/\./s/\/32//g' "${tmp1}" | normalize_cidrs ${_norm_flag} | sort -u | ${aggregateCIDR} --quiet --spf > "${tmp2}" &
 show_dots "$!"
 
 if [ x"$enable_blocklist" = x"yes" ] ; then
-        cat "${blocktmp1}" | "${spftoolspath}"/normalize.sh ${_norm_flag} | sort -u | ${aggregateCIDR} --quiet --spf > "${blocktmp2}" &
+        cat "${blocktmp1}" | normalize_cidrs ${_norm_flag} | sort -u | ${aggregateCIDR} --quiet --spf > "${blocktmp2}" &
         show_dots "$!"
 fi
 
@@ -411,7 +794,7 @@ if [ x"$enable_blocklist" = x"yes" ] ; then
 	cat "${blocktmp5}" >> "${output_dir}"/"${blocklist}"
 fi
 
-cleanup
+cleanup_tmpfiles
 
 printf '\nDone!\n'
 
