@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 #
 # Vendored from nabbi/route-summarization:
 # https://github.com/nabbi/route-summarization
