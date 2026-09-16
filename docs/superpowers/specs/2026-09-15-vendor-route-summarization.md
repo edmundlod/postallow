@@ -41,25 +41,20 @@ carries a separately self-added BSD-3-Clause `LICENSE`
 (`Copyright (c) 2025, Edmund Lodewijks`) predating nabbi's MIT grant — now
 irrelevant; vendor against nabbi's MIT terms, not the fork's claim.
 
-## Prerequisites (must land before this spec's implementation branches)
+## Prerequisites — both DONE as of 2026-09-16
 
 Same as the spf-tools spec (`2026-09-15-incorporate-spf-tools.md`):
 
-1. **Sync `main` with `release/4.5.1`** (fast-forward and push, confirm
-   with the user first — shared branch).
-2. **Drop Debian packaging from the repo entirely, and move RPM packaging
-   (`contrib/rpm/`) off `main` onto a dedicated `rpm` branch** before this
-   work starts — raised by the user during spec review; designed
-   separately at
-   `docs/superpowers/specs/2026-09-15-drop-debian-split-rpm-branch.md`.
-   Until it lands, this spec's implementation does not touch
-   `contrib/rpm/postallow.spec` — see Design, below.
-   `.github/workflows/ci.yml` is unaffected by that other spec (stays on
-   `main`) and *is* in scope here — it currently installs
-   `aggregateCIDR.pl` as part of its test setup and needs the
-   corresponding step removed. `debian/control`/`debian/copyright` no
-   longer exist once the other spec lands, so there's nothing there to
-   update.
+1. ~~Sync `main` with `release/4.5.1`.~~ **Done.**
+2. ~~Drop Debian packaging from the repo entirely, and move RPM packaging
+   (`contrib/rpm/`) off `main` onto a dedicated `rpm` branch.~~ **Done** —
+   see `docs/superpowers/specs/2026-09-15-drop-debian-split-rpm-branch.md`
+   (now marked Implemented). `contrib/rpm/postallow.spec` no longer exists
+   on `main`; `debian/control`/`debian/copyright` no longer exist anywhere.
+   `.github/workflows/ci.yml` stayed on `main` throughout and remains in
+   scope here — it currently installs `aggregateCIDR.pl` as part of its
+   test setup and needs the corresponding step removed as part of this
+   spec.
 
 ## Design
 
@@ -115,6 +110,6 @@ non-zero exit) — no behavior change, just no more PATH search.
   `2026-09-15-incorporate-spf-tools.md`.
 - Version bump to 4.6.0 — a separate `release: bump version to 4.6.0`
   commit after both specs land, matching existing repo convention.
-- Dropping Debian packaging and moving RPM packaging off `main` — see
-  Prerequisites; spec written at
+- Dropping Debian packaging and moving RPM packaging off `main` — already
+  done, see Prerequisites and
   `docs/superpowers/specs/2026-09-15-drop-debian-split-rpm-branch.md`.

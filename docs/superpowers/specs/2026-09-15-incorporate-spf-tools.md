@@ -47,8 +47,8 @@ query) is separate, later work — see Non-Goals.
   `despf.inc.sh` also defines a function named `cleanup(loopfile)` (removes
   a per-query loop-detection tempfile). Same name, different signatures and
   purposes.
-- Repo hygiene: local `main` is 22 commits behind `origin/release/4.5.1`
-  (missing `--quick-add`, the rpm move, Arch packaging, apt-dispatch fixes).
+- `--quick-add` is now on `main` (was on `release/4.5.1` only when this
+  spec was first drafted; `main` was synced 2026-09-16 — see Prerequisites).
 
 ## Licensing (verified via `gh api`, not assumed)
 
@@ -57,25 +57,20 @@ query) is separate, later work — see Non-Goals.
 headers. Clear to incorporate, provided Apache-2.0 §4 obligations are met
 (retain copyright/license notices, state what changed).
 
-## Prerequisites (must land before this spec's implementation branches)
+## Prerequisites — both DONE as of 2026-09-16
 
-1. **Sync `main` with `release/4.5.1`.** Fast-forward `main` to
-   `origin/release/4.5.1` and push; branch this work from the resulting
-   `main`. Pushing to a shared branch — confirm with the user immediately
-   before doing it, independent of spec approval.
-2. **Drop Debian packaging from the repo entirely, and move RPM packaging
-   (`contrib/rpm/`) off `main` onto a dedicated `rpm` branch.** Raised by
-   the user during spec review (`paad:pushback`, 2026-09-15) — realized
-   only after the original combined spec was written, and explicitly
-   wanted *before* this work starts. Designed separately:
-   `docs/superpowers/specs/2026-09-15-drop-debian-split-rpm-branch.md`.
-   Until it lands, **this spec's implementation does not touch
-   `contrib/rpm/postallow.spec`** — see Design, below.
-   `.github/workflows/ci.yml` is unaffected by that other spec (it stays on
-   `main` either way) and *is* in scope here — it currently installs
-   spf-tools as part of its test setup and needs the corresponding steps
-   removed. `debian/control`/`debian/copyright` no longer exist once the
-   other spec lands, so there's nothing there to update.
+1. ~~Sync `main` with `release/4.5.1`.~~ **Done.** `main` was fast-forwarded
+   and pushed 2026-09-16.
+2. ~~Drop Debian packaging from the repo entirely, and move RPM packaging
+   (`contrib/rpm/`) off `main` onto a dedicated `rpm` branch.~~ **Done** —
+   see `docs/superpowers/specs/2026-09-15-drop-debian-split-rpm-branch.md`
+   (now marked Implemented). `contrib/rpm/postallow.spec` no longer exists
+   on `main` (it's on the `rpm` branch); `debian/control`/`debian/copyright`
+   no longer exist anywhere in the repo. Both are confirmed non-issues for
+   this spec's implementation now, not just deferred.
+   `.github/workflows/ci.yml` stayed on `main` throughout and remains in
+   scope here — it currently installs spf-tools as part of its test setup
+   and needs the corresponding steps removed as part of this spec.
 
 ## Design
 
@@ -183,6 +178,6 @@ is a port, not a rewrite, so failure modes must not change.
   commit after both this spec and the route-summarization spec land,
   matching existing repo convention (e.g. commit `1b1a249`, a dedicated
   release-bump commit separate from the feature commits before it).
-- Dropping Debian packaging and moving RPM packaging off `main` — see
-  Prerequisites; spec written at
+- Dropping Debian packaging and moving RPM packaging off `main` — already
+  done, see Prerequisites and
   `docs/superpowers/specs/2026-09-15-drop-debian-split-rpm-branch.md`.

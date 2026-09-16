@@ -1,5 +1,14 @@
 # Drop Debian packaging, move RPM packaging off `main` onto a dedicated branch — Design Spec
 
+**Status: Implemented 2026-09-16.** `main` @ `7d3d788` (packaging removal +
+`dispatch-packaging.yml`) through `4a022f9` (cherry-picked unrelated
+spf-tools-detection commit from the now-deleted `master`, see below);
+`rpm` @ `d33fadd`. See "Implementation Notes" at the end for what changed
+from the design below during execution — mainly the extraction method and
+an unplanned `main`/`master` branch consolidation that surfaced along the
+way. `dispatch-packaging.yml` has not yet been exercised against a real
+release tag; that remains open, see Testing/Verification.
+
 ## Overview
 
 `contrib/rpm/` and its tag-triggered package-build workflow
@@ -164,3 +173,38 @@ as the one-time extraction step, then maintained by rebase from then on).
   by the user elsewhere.
 - The spf-tools/route-summarization incorporation work — this spec is a
   prerequisite for those, not a replacement.
+
+## Implementation Notes (2026-09-16)
+
+- **Extraction method:** the "One-time extraction" section above left
+  cherry-pick vs. recreate-as-one-commit as an implementation-time call.
+  Checked: every commit touching `contrib/rpm/`/`build-rpm.yml` in history
+  was heavily mixed with unrelated files (`postallow`, README, man pages,
+  `CHANGELOG.md`, `contrib/archlinux/`, `debian/*`) — cherry-picking would
+  have pulled in or conflicted with unrelated content. Went with the
+  simpler path instead: since `main` was fast-forwarded to
+  `release/4.5.1` first (a separate prerequisite, already tracked), the
+  `rpm` branch was cut directly from that synced `main` — it already
+  contained `contrib/rpm/postallow.spec` and `build-rpm.yml` in their
+  current form, so no recreation was needed either; only `build-rpm.yml`'s
+  trigger/version-extraction/release-targeting were changed on the branch.
+- **Unplanned `main`/`master` consolidation:** while pushing, discovered
+  the repo had two parallel trunk branches — `main` (this session's work)
+  and `master` (GitHub's actual configured default branch, which had
+  independently gained a PR, #38, unrelated to this spec). Both shared the
+  exact same base (`release/4.5.1`'s tip) with one unique commit each, so
+  no conflict; `master`'s unique commit was cherry-picked onto `main`
+  (`4a022f9`), GitHub's default branch was switched to `main`, and `master`
+  was deleted (no open PRs, no branch protection on either — confirmed via
+  `gh api`/`gh pr list` before deleting). Not part of the original design;
+  the design's Prerequisites (main/release sync, Debian/RPM removal) had
+  no way to anticipate a second trunk branch existing.
+- `README.md`'s "via apt" install section and its TOC entry were removed
+  as part of the Debian removal (the install instructions depended on
+  `build-deb.yml`'s now-deleted `edmundlod/apt` dispatch) — not explicitly
+  called out in the Design above, added during implementation after
+  confirming with the user.
+- Outstanding from Testing/Verification: `dispatch-packaging.yml` has not
+  been dry-run against a real or scratch tag yet — it's untested until the
+  next actual release tag is pushed (or a deliberate test tag is used
+  first).
