@@ -54,11 +54,6 @@
   network inet6 stream,
   network unix  stream,   # systemd-resolved stub socket
 
-  # --- spf-tools (despf.sh and its sourced includes) ---
-  /usr/bin/spf-tools/              r,
-  /usr/bin/spf-tools/**            r,
-  /usr/bin/spf-tools/despf.sh     ix,
-
   # --- aggregateCIDR.pl (route-summarization) ---
   /usr/bin/aggregateCIDR.pl        r,
   /usr/bin/perl                   ix,
@@ -81,7 +76,7 @@
 
   # --- temp files ---
   # postallow uses mktemp /tmp/postallow.XXXXXX (5 files)
-  # despf.sh uses mktemp /tmp/despf-loop-XXXXXXX
+  # despf_run() (ported from despf.sh) uses mktemp /tmp/despf-loop-XXXXXXX
   /tmp/postallow.*                rw,
   /tmp/despf-loop-*               rw,
 

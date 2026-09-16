@@ -3,8 +3,8 @@
 # Postallow install helper
 # https://github.com/edmundlod/postallow
 #
-# Creates the postallow system user and output directory, and installs the two
-# required dependencies (spf-tools scripts and aggregateCIDR.pl) into /usr/local/bin/.
+# Creates the postallow system user and output directory, and installs the
+# remaining external dependency (aggregateCIDR.pl) into /usr/local/bin/.
 #
 # This is a convenience script for manual installs on common platforms.
 # OS packagers should handle all of this in their own package lifecycle hooks.
@@ -75,37 +75,6 @@ else
     echo "Created ${DATADIR} owned by ${POSTALLOW_USER}."
 fi
 
-
-# --- Install spf-tools ---
-
-_install_spf=true
-if command -v despf.sh >/dev/null 2>&1; then
-    if [ -t 0 ]; then
-        printf 'spf-tools is already installed. Reinstall to update? [y/N] '
-        read -r _ans
-        case "${_ans}" in
-            [Yy]*) _install_spf=true ;;
-            *) _install_spf=false; echo "Leaving spf-tools as-is." ;;
-        esac
-    else
-        echo "spf-tools already installed (non-interactive run, leaving as-is)."
-        _install_spf=false
-    fi
-fi
-
-if [ "${_install_spf}" = true ]; then
-    if ! command -v git >/dev/null 2>&1; then
-        echo "Error: git is required to install spf-tools. Please install git first." >&2
-        exit 1
-    fi
-    _tmpdir=$(mktemp -d)
-    git clone --depth=1 https://github.com/spf-tools/spf-tools "${_tmpdir}/spf-tools"
-    for _f in "${_tmpdir}/spf-tools"/*.sh; do
-        install -m 755 "${_f}" /usr/local/bin/
-    done
-    rm -rf "${_tmpdir}"
-    echo "Installed spf-tools scripts to /usr/local/bin/."
-fi
 
 # --- Install aggregateCIDR.pl ---
 
