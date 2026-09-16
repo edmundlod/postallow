@@ -110,19 +110,20 @@ for a description of all configuration options.
 .
 .SH DEPENDENCIES
 .TP
-.B spf-tools
-Provides
-.BR despf.sh (1),
-used to recursively expand SPF \(lqinclude:\(rq chains.
-Available at
-.IR https://github.com/spf-tools/spf-tools .
-.TP
 .B route-summarization
 Provides
 .BR aggregateCIDR.pl (1),
 used to aggregate and summarise the resulting CIDR ranges.
 Available at
 .IR https://github.com/edmundlod/route-summarization .
+.PP
+SPF-record expansion and normalisation (originally from the
+.B spf-tools
+project by Jan Sarenik and contributors,
+.IR https://github.com/spf-tools/spf-tools )
+are built directly into
+.B postallow
+and require no separate installation.
 .
 .SH EXIT STATUS
 .TP
