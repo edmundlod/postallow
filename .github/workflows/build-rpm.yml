@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - rpm
+  workflow_dispatch:
 
 jobs:
   build-rpm:
