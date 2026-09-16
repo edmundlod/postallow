@@ -1030,11 +1030,18 @@ Remove this block entirely (the manual "Install spf-tools" instructions):
     rm -rf /tmp/spf-tools
 ```
 
-Remove the line:
+This is a numbered list (`README.md:188-190`) — removing the middle item
+requires renumbering the item after it. Change:
 ```markdown
+1. Set `output_dir` to the output directory created above
 2. Verify `spftoolspath` points to your SPF-Tools installation
+3. Add any custom domains to your `custom_hosts` file (e.g. `/etc/postallow/custom_hosts`)
 ```
-(and renumber the surrounding numbered-list items if this was a numbered step).
+to:
+```markdown
+1. Set `output_dir` to the output directory created above
+2. Add any custom domains to your `custom_hosts` file (e.g. `/etc/postallow/custom_hosts`)
+```
 
 - [ ] **Step 4: `README.md` options section (~line 303,307)**
 
@@ -1150,10 +1157,34 @@ cat /tmp/pa-test/postscreen_spf_allowlist.cidr
 ```
 Expected: the script runs to completion ("Done!"), and the output file
 contains `permit` lines with real CIDR ranges for google.com's outbound
-mail servers. Compare this output against a run of the same config from
-before this plan's changes (e.g. `git stash` back to the pre-Task-1 state,
-run, `git stash pop`, run again, `diff` the two output files) — they
-should be identical.
+mail servers.
+
+Then compare against the pre-Task-1 behavior using a worktree, since by
+this point Tasks 1-8 are all committed (nothing left to `git stash`):
+
+```bash
+git worktree add /tmp/pa-before 568b9bf   # commit before Task 1
+mkdir -p /tmp/pa-test-before
+cat > /tmp/pa-test-before/postallow.conf <<'EOF'
+allowlist_hosts=/tmp/pa-test-before/allowlist_hosts
+output_dir=/tmp/pa-test-before
+include_yahoo=no
+spftoolspath=/usr/local/bin
+EOF
+cat > /tmp/pa-test-before/allowlist_hosts <<'EOF'
+email_hosts="google.com"
+EOF
+sh /tmp/pa-before/postallow /tmp/pa-test-before/postallow.conf
+diff /tmp/pa-test-before/postscreen_spf_allowlist.cidr /tmp/pa-test/postscreen_spf_allowlist.cidr
+git worktree remove /tmp/pa-before
+```
+Expected: `diff` produces no output (aside from the generated header
+comment's timestamp/version line, which always differs run-to-run) — the
+actual CIDR rules should be identical. The "before" run requires spf-tools
+already installed at `spftoolspath` on this machine (it did before this
+plan's changes); if it isn't, install it first via that commit's own
+`contrib/install.sh`, or skip the "before" run and just sanity-check the
+"after" output's CIDR ranges by hand against known Google SPF ranges.
 
 - [ ] **Step 5: `--quick-add` and Yahoo path**
 
