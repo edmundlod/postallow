@@ -23,12 +23,6 @@ yahoo_url="https://senders.yahooinc.com/outbound-mail-servers/"
 # Abort script on error
 set -e
 
-if ! aggregateCIDR=$(which aggregateCIDR.pl) ; then
-    echo "fatal: unable to locate aggregateCIDR.pl"
-    echo "https://github.com/nabbi/route-summarization"
-    exit 1
-fi
-
 printf "Scraping Yahoo! outbound IP addresses...\n"
 
 # Check for passed config file
@@ -44,13 +38,23 @@ elif [ -f "/usr/local/etc/postallow/postallow.conf" ]; then
     config_file="/usr/local/etc/postallow/postallow.conf"
 fi
 
-# Read config file options   
+# Read config file options
 if [ -s $config_file ] ; then
         printf "\nReading options from %s...\n" "$config_file"
         . "${config_file}"
 else
         >&2 printf "%s: Can't find %s. Exiting.\n" "$0" "$config_file"
         exit 1
+fi
+
+# aggregateCIDR.pl (vendored from route-summarization) is installed alongside
+# postallow itself; aggregatecidrpath defaults to where the installer puts it.
+aggregatecidrpath=${aggregatecidrpath:-/usr/local/bin}
+aggregateCIDR="${aggregatecidrpath}/aggregateCIDR.pl"
+if [ ! -x "${aggregateCIDR}" ]; then
+	printf "%s: fatal: aggregateCIDR.pl not found or not executable at %s\n" "$0" "${aggregateCIDR}" 1>&2
+	printf "%s: check aggregatecidrpath in %s\n" "$0" "$config_file" 1>&2
+	exit 1
 fi
 
 # Check for wget or curl

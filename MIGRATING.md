@@ -1,5 +1,21 @@
 # Migrating to Postallow
 
+## From 4.5.x to 4.6.0
+
+As of v4.6.0, `aggregateCIDR.pl` is vendored directly in the postallow
+repo/package (`contrib/aggregateCIDR.pl`) instead of being fetched
+separately from the [route-summarization](https://github.com/nabbi/route-summarization)
+project. `postallow` no longer searches `PATH` for it; it now reads a fixed
+path from the new `aggregatecidrpath` setting in `postallow.conf` (default
+`/usr/local/bin`, matching the previous manual-install location).
+
+If you previously installed `aggregateCIDR.pl` to a location other than
+`/usr/local/bin` and don't regenerate `postallow.conf`, set
+`aggregatecidrpath` explicitly to that directory. Otherwise, `make install`
+installs the vendored copy alongside `postallow` and no action is needed.
+`contrib/install.sh` no longer installs `aggregateCIDR.pl` — that step moved
+to `make install`.
+
 ## From 3.x to 4.0.0
 
 Version 4.0.0 introduces a significant security improvement: Postallow no

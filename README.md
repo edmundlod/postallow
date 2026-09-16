@@ -56,12 +56,14 @@ By default, Postallow has blocklisting turned off. Most users will not need to e
 Postallow runs as a shell script (```/bin/sh```) and relies on scripts from the <a target="_blank"
 href="https://github.com/spf-tools/spf-tools">SPF-Tools</a> project (**despf.sh**, **normalize.sh**) to help recursively query and normalise SPF records. Unless you install via `apt` or `yum`/`dnf` (see below), use `contrib/install.sh` or the manual steps in the [Manual installation](#manual-installation) section to install them, then confirm the `spftoolspath` value in `postallow.conf`.
 
+CIDR aggregation uses a vendored copy of `aggregateCIDR.pl` from the <a target="_blank"
+href="https://github.com/nabbi/route-summarization">route-summarization</a> project (see `contrib/aggregateCIDR.pl`), installed automatically alongside `postallow` — no separate fetch needed.
+
 In order to run `postallow` you will need:
 
 * A shell
-* Perl 5+
+* Perl 5+ with the `Net::CIDR::Lite` module (used by the vendored `aggregateCIDR.pl`)
 * [spf-tools](https://github.com/spf-tools/spf-tools)
-* [route-summarization](https://github.com/edmundlod/route-summarization)
 
 **Please update SPF-Tools whenever you update Postallow, as both are under continuous development, and sometimes new features of Postallow depend upon an updated version of SPF-Tools.**
 
@@ -124,7 +126,7 @@ A package is available in the `AUR`. The `PKGBUILD`, `sysusers`, and `tmpfiles` 
 
 Install requirements:
 
-* `git` — to fetch spf-tools and route-summarization
+* `git` — to fetch spf-tools
 * `make` — to run `make install`
 
 ### 1. Create the postallow user, output directory, and install dependencies
@@ -133,7 +135,7 @@ A helper script is provided for common platforms:
 
     sudo contrib/install.sh
 
-This creates the `postallow` system user and the output directory with correct ownership, and installs [spf-tools](https://github.com/spf-tools/spf-tools) and [aggregateCIDR.pl](https://github.com/edmundlod/route-summarization) into `/usr/local/bin/`. OS packagers should handle all of this in their own package lifecycle hooks instead.
+This creates the `postallow` system user and the output directory with correct ownership, and installs [spf-tools](https://github.com/spf-tools/spf-tools) into `/usr/local/bin/`. OS packagers should handle all of this in their own package lifecycle hooks instead.
 
 If you prefer to do it manually, or are on an unsupported platform, perform each step in turn:
 
@@ -162,15 +164,12 @@ If you prefer to do it manually, or are on an unsupported platform, perform each
     for f in /tmp/spf-tools/*.sh; do install -m 755 "$f" /usr/local/bin/; done
     rm -rf /tmp/spf-tools
 
-**Install aggregateCIDR.pl:**
-
-    git clone --depth=1 https://github.com/edmundlod/route-summarization /tmp/route-summarization
-    install -m 755 /tmp/route-summarization/aggregateCIDR.pl /usr/local/bin/aggregateCIDR.pl
-    rm -rf /tmp/route-summarization
-
 ### 2. Install Postallow
 
     make install
+
+This also installs the vendored `contrib/aggregateCIDR.pl` (used for CIDR
+aggregation) alongside `postallow` — no separate fetch needed.
 
 The default prefix is `/usr/local`. Common overrides:
 
@@ -311,6 +310,7 @@ Other options in ```postallow.conf``` include changing the filenames for your al
 By the original author:
 * Special thanks to Mike Miller for his 2013 <a target="_blank" href="https://archive.mgm51.com/sources/gallowlist.html">gallowlist script</a> that initially got me tinkering with SPF-based Postscreen allowlists. The temp file creation and ```printf``` statement near the end of the Postallow script are remnants of his original script.
 * Thanks to Jan Sarenik (author of <a target="_blank" href="https://github.com/jsarenik/spf-tools">SPF-Tools</a>).
+* Thanks to Nic Boet (`nabbi`) for <a target="_blank" href="https://github.com/nabbi/route-summarization">route-summarization</a>'s `aggregateCIDR.pl`, vendored into Postallow as of v4.6.0 for CIDR aggregation.
 * Thanks to <a target="_blank" href="https://github.com/jcbf">Jose Borges Ferreira</a> for patches and contributions to Postallow, include internal code to validate CIDRs.
 * Thanks to <a target="_blank" href="https://github.com/corrideat">Ricardo Iván Vieitez Parra</a> for contributions to Postallow, including external config file support, normalization improvements, error handling, and additional modifications that allow Postallow to run on additional systems.
 * Thanks to partner (business... not life) <a target="_blank" href="http://stevecook.net/">Steve Cook</a> for helping me cludge through Bash scripting, and for writing the initial version of the ```scrape_yahoo``` script.

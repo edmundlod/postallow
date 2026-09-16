@@ -12,6 +12,9 @@ custom_hosts_file=@SYSCONFDIR@/postallow/custom_hosts
 # Location of spf-tools
 spftoolspath=@SPFTOOLSPATH@
 
+# Directory containing the vendored aggregateCIDR.pl (route-summarization)
+aggregatecidrpath=@BINDIR@
+
 # Directory where the generated CIDR files are written.
 # Postallow writes these files as the postallow user (world-readable, mode 644).
 # Point Postfix's postscreen_access_list at this directory directly — no need

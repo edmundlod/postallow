@@ -59,7 +59,7 @@
   /usr/bin/spf-tools/**            r,
   /usr/bin/spf-tools/despf.sh     ix,
 
-  # --- aggregateCIDR.pl (route-summarization) ---
+  # --- aggregateCIDR.pl (vendored from route-summarization, installed via 'make install') ---
   /usr/bin/aggregateCIDR.pl        r,
   /usr/bin/perl                   ix,
   /usr/lib/perl{,5}/              r,

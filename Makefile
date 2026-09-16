@@ -98,6 +98,7 @@ install:
 	install -d -m 755 $(DESTDIR)$(BINDIR)
 	install -m 755 postallow $(DESTDIR)$(BINDIR)/postallow
 	install -m 755 scripts/scrape_yahoo $(DESTDIR)$(BINDIR)/scrape_yahoo
+	install -m 755 contrib/aggregateCIDR.pl $(DESTDIR)$(BINDIR)/aggregateCIDR.pl
 
 	# --- static data ---
 	install -d -m 755 $(DESTDIR)$(DATADIR)
@@ -205,6 +206,7 @@ install:
 uninstall:
 	rm -f  $(DESTDIR)$(BINDIR)/postallow
 	rm -f  $(DESTDIR)$(BINDIR)/scrape_yahoo
+	rm -f  $(DESTDIR)$(BINDIR)/aggregateCIDR.pl
 	rm -f  $(DESTDIR)$(DATADIR)/yahoo_static_hosts.txt
 	rm -f  $(DESTDIR)$(DATADIR)/allowlist_hosts
 	rm -df $(DESTDIR)$(DATADIR)

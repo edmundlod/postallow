@@ -47,12 +47,6 @@ tmpBase=$(basename "$0")
 # Abort script on error (FYI: enabling will cause script to exit silently if mailer has no valid results)
 set -e
 
-if ! aggregateCIDR=$(command -v aggregateCIDR.pl) ; then
-    echo "fatal: unable to locate aggregateCIDR.pl"
-    echo "https://github.com/edmundlod/route-summarization"
-    exit 1
-fi
-
 printf "Starting Postallow v$version ($lastupdated)\n"
 
 # Parse command-line options
@@ -112,6 +106,16 @@ if [ -z "${yahoo_static_hosts:-}" ]; then
 			break
 		fi
 	done
+fi
+
+# aggregateCIDR.pl (vendored from route-summarization) is installed alongside
+# postallow itself; aggregatecidrpath defaults to where the installer puts it.
+aggregatecidrpath=${aggregatecidrpath:-/usr/local/bin}
+aggregateCIDR="${aggregatecidrpath}/aggregateCIDR.pl"
+if [ ! -x "${aggregateCIDR}" ]; then
+	printf "%s: fatal: aggregateCIDR.pl not found or not executable at %s\n" "$0" "${aggregateCIDR}" 1>&2
+	printf "%s: check aggregatecidrpath in %s\n" "$0" "$config_file" 1>&2
+	exit 1
 fi
 
 # Format an already-normalized ip4:/ip6: entry for the output file.
@@ -358,7 +362,7 @@ fi
 
 printf "\nCIDR and Host summarization...\n"
 # normalize.sh fixes invalid IPv4 CIDRs (non-null host bits) before aggregation;
-# aggregateCIDR.pl is from nabbi/route-summarization, packaged at edmundlod/route-summarization
+# aggregateCIDR.pl is vendored from nabbi/route-summarization (see contrib/aggregateCIDR.pl)
 sed '/\./s/\/32//g' "${tmp1}" | "${spftoolspath}"/normalize.sh ${_norm_flag} | sort -u | ${aggregateCIDR} --quiet --spf > "${tmp2}" &
 show_dots "$!"
 

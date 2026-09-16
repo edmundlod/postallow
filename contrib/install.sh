@@ -3,8 +3,9 @@
 # Postallow install helper
 # https://github.com/edmundlod/postallow
 #
-# Creates the postallow system user and output directory, and installs the two
-# required dependencies (spf-tools scripts and aggregateCIDR.pl) into /usr/local/bin/.
+# Creates the postallow system user and output directory, and installs the
+# remaining external dependency (spf-tools scripts) into /usr/local/bin/.
+# aggregateCIDR.pl is vendored in contrib/ and installed by 'make install'.
 #
 # This is a convenience script for manual installs on common platforms.
 # OS packagers should handle all of this in their own package lifecycle hooks.
@@ -105,38 +106,6 @@ if [ "${_install_spf}" = true ]; then
     done
     rm -rf "${_tmpdir}"
     echo "Installed spf-tools scripts to /usr/local/bin/."
-fi
-
-# --- Install aggregateCIDR.pl ---
-
-AGGREGATE_BIN="/usr/local/bin/aggregateCIDR.pl"
-
-_install_agg=true
-if [ -f "${AGGREGATE_BIN}" ]; then
-    if [ -t 0 ]; then
-        printf 'aggregateCIDR.pl is already installed. Reinstall to update? [y/N] '
-        read -r _ans
-        case "${_ans}" in
-            [Yy]*) _install_agg=true ;;
-            *) _install_agg=false; echo "Leaving aggregateCIDR.pl as-is." ;;
-        esac
-    else
-        echo "aggregateCIDR.pl already installed (non-interactive run, leaving as-is)."
-        _install_agg=false
-    fi
-fi
-
-if [ "${_install_agg}" = true ]; then
-    if ! command -v git >/dev/null 2>&1; then
-        echo "Error: git is required to install route-summarization. Please install git first." >&2
-        exit 1
-    fi
-    _tmpdir=$(mktemp -d)
-    git clone --depth=1 \
-        https://github.com/edmundlod/route-summarization "${_tmpdir}/route-summarization"
-    install -m 755 "${_tmpdir}/route-summarization/aggregateCIDR.pl" "${AGGREGATE_BIN}"
-    rm -rf "${_tmpdir}"
-    echo "Installed aggregateCIDR.pl to ${AGGREGATE_BIN}."
 fi
 
 echo ""
