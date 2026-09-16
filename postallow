@@ -239,7 +239,7 @@ if [ -n "${custom_hosts_file:-}" ] && [ -f "$custom_hosts_file" ]; then
 fi
 
 # Remove temp files
-cleanup() {
+cleanup_tmpfiles() {
 	test -e "${tmp1}" && rm "${tmp1}"
 	test -e "${tmp2}" && rm "${tmp2}"
 	test -e "${tmp3}" && rm "${tmp3}"
@@ -267,7 +267,7 @@ for p in $tmpPrefix; do
 		t="$(mktemp -q /tmp/"${tmpBase}".XXXXXX)"
 		if [ $? -ne 0 ]; then
 			>&2 printf "%s: Can't create temp files, exiting...\n" "$0"
-			cleanup
+			cleanup_tmpfiles
 			exit 1
 		fi
 		eval ${p}${i}="$t"
@@ -407,7 +407,7 @@ if [ x"$enable_blocklist" = x"yes" ] ; then
 	cat "${blocktmp5}" >> "${output_dir}"/"${blocklist}"
 fi
 
-cleanup
+cleanup_tmpfiles
 
 printf '\nDone!\n'
 
